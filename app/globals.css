@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-craft-50 text-ink-900;
+  }
+  html.dark {
+    @apply bg-ink-900 text-craft-50;
+  }
+  body {
+    @apply font-serif antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+  code, pre {
+    @apply font-mono;
+  }
+}
+
+@layer utilities {
+  .craft-card {
+    @apply rounded-sm border border-craft-200 bg-craft-100/60 dark:bg-ink-800/40 dark:border-ink-600;
+  }
+  .craft-prose {
+    @apply prose max-w-none;
+  }
+}
+
+/* Base highlight.js (dark-agnostic) styling — consumers can override */
+.hljs {
+  background: transparent;
+}
