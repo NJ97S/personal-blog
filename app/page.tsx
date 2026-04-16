@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Layout from '@/components/Layout'
 import PostCard from '@/components/PostCard'
 import { createClient } from '@/lib/supabase/server'
+import { fetchCategoryTree, walkTree } from '@/lib/categories'
 
 const PAGE_SIZE = 10
 
@@ -16,7 +17,9 @@ export default async function Home({
 
   let query = supabase
     .from('posts')
-    .select('id, title, slug, excerpt, tags, published, created_at')
+    .select(
+      'id, title, slug, excerpt, tags, published, created_at, cover_image, category_id',
+    )
     .eq('published', true)
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE + 1)
@@ -25,12 +28,14 @@ export default async function Home({
     query = query.lt('created_at', searchParams.cursor)
   }
 
-  const { data: rows, error } = await query
+  const [{ data: rows, error }, tree] = await Promise.all([query, fetchCategoryTree()])
 
   const posts = rows ?? []
   const hasMore = posts.length > PAGE_SIZE
   const visible = hasMore ? posts.slice(0, PAGE_SIZE) : posts
   const nextCursor = hasMore ? visible[visible.length - 1]?.created_at : null
+
+  const categoryById = new Map(walkTree(tree).map((n) => [n.id, n] as const))
 
   return (
     <Layout>
@@ -50,18 +55,23 @@ export default async function Home({
       )}
 
       <div className="space-y-4">
-        {visible.map((post) => (
-          <PostCard
-            key={post.id}
-            id={post.id}
-            title={post.title}
-            slug={post.slug}
-            excerpt={post.excerpt}
-            tags={post.tags ?? []}
-            published={post.published}
-            created_at={post.created_at}
-          />
-        ))}
+        {visible.map((post) => {
+          const cat = post.category_id ? categoryById.get(post.category_id) : undefined
+          return (
+            <PostCard
+              key={post.id}
+              id={post.id}
+              title={post.title}
+              slug={post.slug}
+              excerpt={post.excerpt}
+              tags={post.tags ?? []}
+              published={post.published}
+              created_at={post.created_at}
+              coverImage={post.cover_image}
+              category={cat ? { name: cat.name, path: cat.path } : null}
+            />
+          )
+        })}
       </div>
 
       {nextCursor && (

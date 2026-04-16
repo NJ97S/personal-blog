@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { fetchCategoryTree, walkTree } from '@/lib/categories'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
@@ -14,8 +15,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
   }))
 
+  const tree = await fetchCategoryTree()
+  const categoryEntries: MetadataRoute.Sitemap = walkTree(tree).map((n) => ({
+    url: `${base}/categories/${n.path.map(encodeURIComponent).join('/')}`,
+    lastModified: new Date(),
+  }))
+
   return [
     { url: base, lastModified: new Date() },
     ...postEntries,
+    ...categoryEntries,
   ]
 }

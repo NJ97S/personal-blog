@@ -1,6 +1,7 @@
 import Layout from '@/components/Layout'
 import PostCard from '@/components/PostCard'
 import { createClient } from '@/lib/supabase/server'
+import { fetchCategoryTree, walkTree } from '@/lib/categories'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,12 +14,19 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
   const tag = decodeURIComponent(params.tag)
   const supabase = createClient()
 
-  const { data: posts } = await supabase
-    .from('posts')
-    .select('id, title, slug, excerpt, tags, published, created_at')
-    .eq('published', true)
-    .contains('tags', [tag])
-    .order('created_at', { ascending: false })
+  const [{ data: posts }, tree] = await Promise.all([
+    supabase
+      .from('posts')
+      .select(
+        'id, title, slug, excerpt, tags, published, created_at, cover_image, category_id',
+      )
+      .eq('published', true)
+      .contains('tags', [tag])
+      .order('created_at', { ascending: false }),
+    fetchCategoryTree(),
+  ])
+
+  const categoryById = new Map(walkTree(tree).map((n) => [n.id, n] as const))
 
   return (
     <Layout>
@@ -31,18 +39,23 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
       </section>
 
       <div className="space-y-4">
-        {(posts ?? []).map((post) => (
-          <PostCard
-            key={post.id}
-            id={post.id}
-            title={post.title}
-            slug={post.slug}
-            excerpt={post.excerpt}
-            tags={post.tags ?? []}
-            published={post.published}
-            created_at={post.created_at}
-          />
-        ))}
+        {(posts ?? []).map((post) => {
+          const cat = post.category_id ? categoryById.get(post.category_id) : undefined
+          return (
+            <PostCard
+              key={post.id}
+              id={post.id}
+              title={post.title}
+              slug={post.slug}
+              excerpt={post.excerpt}
+              tags={post.tags ?? []}
+              published={post.published}
+              created_at={post.created_at}
+              coverImage={post.cover_image}
+              category={cat ? { name: cat.name, path: cat.path } : null}
+            />
+          )
+        })}
         {(!posts || posts.length === 0) && (
           <p className="craft-card p-4 text-sm text-ink-400">이 태그의 글이 없습니다.</p>
         )}
