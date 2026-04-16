@@ -29,6 +29,7 @@ export default async function Comments({
     .select('id, author_name, content, created_at')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
+    .limit(200)
 
   const items: Comment[] = comments ?? []
 

@@ -38,7 +38,8 @@ export async function createComment(
 
   const limiter = getRatelimit()
   if (limiter) {
-    const ip = headers().get('x-forwarded-for') ?? 'anonymous'
+    const xff = headers().get('x-forwarded-for') ?? ''
+    const ip = (xff.split(',')[0] || headers().get('x-real-ip') || 'anonymous').trim()
     const { success } = await limiter.limit(ip)
     if (!success) {
       return {
@@ -46,12 +47,29 @@ export async function createComment(
         error: '댓글을 너무 자주 작성하셨습니다. 잠시 후 다시 시도해주세요.',
       }
     }
+  } else if (process.env.NODE_ENV === 'production') {
+    return { ok: false, error: '댓글 시스템 설정이 올바르지 않습니다.' }
   }
 
+  const stripUnsafe = (s: string) =>
+    s.replace(/[\u0000-\u001F\u007F\u200B-\u200F\u202A-\u202E]/g, '')
+  const safeName = stripUnsafe(authorName)
+  const safeContent = stripUnsafe(content)
+
   const supabase = createClient()
+  const { data: post } = await supabase
+    .from('posts')
+    .select('id, slug')
+    .eq('id', postId)
+    .eq('published', true)
+    .single()
+  if (!post || post.slug !== postSlug) {
+    return { ok: false, error: '댓글을 작성할 수 없는 글입니다.' }
+  }
+
   const { error } = await supabase
     .from('comments')
-    .insert({ post_id: postId, author_name: authorName, content })
+    .insert({ post_id: postId, author_name: safeName, content: safeContent })
 
   if (error) return { ok: false, error: '댓글 저장에 실패했습니다.' }
 
