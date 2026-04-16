@@ -1,0 +1,46 @@
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+
+export default async function PopularPosts() {
+  const supabase = createClient()
+  // view_count 도입 전까지는 최신 발행 글을 '인기 글'로 노출
+  const { data } = await supabase
+    .from('posts')
+    .select('id, title, slug, created_at')
+    .eq('published', true)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  const posts = data ?? []
+
+  return (
+    <section className="craft-card p-4">
+      <h3 className="font-serif font-bold text-sm mb-3 flex items-center gap-1.5">
+        <span aria-hidden>🔥</span>
+        <span>인기 글</span>
+      </h3>
+      {posts.length === 0 ? (
+        <p className="text-xs text-ink-400">아직 글이 없습니다.</p>
+      ) : (
+        <ol className="space-y-2 text-sm">
+          {posts.map((p, i) => (
+            <li key={p.id} className="flex items-start gap-2">
+              <span
+                aria-hidden
+                className="mt-0.5 h-5 w-5 shrink-0 flex items-center justify-center rounded-sm bg-craft-200 dark:bg-ink-600 text-[10px] font-mono font-bold"
+              >
+                {i + 1}
+              </span>
+              <Link
+                href={`/posts/${p.slug}`}
+                className="line-clamp-2 hover:text-ink-900 dark:hover:text-craft-50 text-ink-600 dark:text-craft-100"
+              >
+                {p.title}
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  )
+}
