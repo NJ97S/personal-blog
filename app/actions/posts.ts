@@ -16,6 +16,30 @@ export type PostInput = {
 
 export type ActionState = { ok: boolean; error?: string; id?: string }
 
+async function requireAdmin() {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { supabase, error: '로그인이 필요합니다.' as const }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.is_admin) return { supabase, error: '권한이 없습니다.' as const }
+  return { supabase, error: null as null }
+}
+
+function isHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 function parseFormData(formData: FormData): PostInput {
   const title = (formData.get('title') as string | null)?.trim() ?? ''
   const slug = (formData.get('slug') as string | null)?.trim() ?? ''
@@ -48,13 +72,18 @@ function validate(input: PostInput): string | null {
     return 'slug 형식이 올바르지 않습니다. (소문자, 숫자, 하이픈만)'
   }
   if (!input.content.trim()) return '내용을 입력해주세요.'
+  if (input.coverImage && !isHttpsUrl(input.coverImage)) {
+    return '커버 이미지는 https URL 이어야 합니다.'
+  }
   return null
 }
 
-function revalidateAll(slug: string) {
+function revalidateAll(...slugs: string[]) {
   revalidatePath('/')
   revalidatePath('/posts/[slug]', 'page')
-  revalidatePath(`/posts/${slug}`)
+  for (const slug of slugs.filter(Boolean)) {
+    revalidatePath(`/posts/${slug}`)
+  }
   revalidatePath('/admin/posts')
 }
 
@@ -62,12 +91,14 @@ export async function createPost(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const guard = await requireAdmin()
+  if (guard.error) return { ok: false, error: guard.error }
+
   const input = parseFormData(formData)
   const err = validate(input)
   if (err) return { ok: false, error: err }
 
-  const supabase = createClient()
-  const { data, error } = await supabase
+  const { data, error } = await guard.supabase
     .from('posts')
     .insert({
       title: input.title,
@@ -95,12 +126,21 @@ export async function updatePost(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const guard = await requireAdmin()
+  if (guard.error) return { ok: false, error: guard.error }
+
   const input = parseFormData(formData)
   const err = validate(input)
   if (err) return { ok: false, error: err }
 
-  const supabase = createClient()
-  const { error } = await supabase
+  const { data: prev } = await guard.supabase
+    .from('posts')
+    .select('slug')
+    .eq('id', id)
+    .single()
+  const oldSlug = prev?.slug ?? null
+
+  const { error } = await guard.supabase
     .from('posts')
     .update({
       title: input.title,
@@ -118,31 +158,40 @@ export async function updatePost(
     return { ok: false, error: error.message }
   }
 
-  revalidateAll(input.slug)
+  revalidateAll(input.slug, oldSlug ?? '')
   return { ok: true }
 }
 
-export async function deletePost(id: string, slug: string) {
-  const supabase = createClient()
-  await supabase.from('posts').delete().eq('id', id)
+export async function deletePost(id: string, slug: string): Promise<ActionState> {
+  const guard = await requireAdmin()
+  if (guard.error) return { ok: false, error: guard.error }
+  const { error } = await guard.supabase.from('posts').delete().eq('id', id)
+  if (error) return { ok: false, error: error.message }
   revalidateAll(slug)
   redirect('/admin/posts')
 }
 
-export async function publishPost(id: string, slug: string) {
-  const supabase = createClient()
-  await supabase.from('posts').update({ published: true }).eq('id', id)
+export async function publishPost(id: string, slug: string): Promise<ActionState> {
+  const guard = await requireAdmin()
+  if (guard.error) return { ok: false, error: guard.error }
+  const { error } = await guard.supabase.from('posts').update({ published: true }).eq('id', id)
+  if (error) return { ok: false, error: error.message }
   revalidateAll(slug)
+  return { ok: true }
 }
 
-export async function unpublishPost(id: string, slug: string) {
-  const supabase = createClient()
-  await supabase.from('posts').update({ published: false }).eq('id', id)
+export async function unpublishPost(id: string, slug: string): Promise<ActionState> {
+  const guard = await requireAdmin()
+  if (guard.error) return { ok: false, error: guard.error }
+  const { error } = await guard.supabase.from('posts').update({ published: false }).eq('id', id)
+  if (error) return { ok: false, error: error.message }
   revalidateAll(slug)
+  return { ok: true }
 }
 
 export async function logoutAction() {
   const supabase = createClient()
   await supabase.auth.signOut()
+  revalidatePath('/admin', 'layout')
   redirect('/admin/login')
 }
