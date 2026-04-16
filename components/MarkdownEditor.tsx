@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import '@uiw/react-md-editor/markdown-editor.css'
 import '@uiw/react-markdown-preview/markdown.css'
 
@@ -20,8 +20,19 @@ export default function MarkdownEditor({
   defaultValue?: string
 }) {
   const [value, setValue] = useState<string>(defaultValue)
+  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light')
+
+  useEffect(() => {
+    const root = document.documentElement
+    const sync = () => setColorMode(root.classList.contains('dark') ? 'dark' : 'light')
+    sync()
+    const observer = new MutationObserver(sync)
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div data-color-mode="light" className="dark:[&_*]:![color-scheme:dark]">
+    <div data-color-mode={colorMode}>
       <input type="hidden" name={name} value={value} readOnly />
       <MDEditor
         value={value}
