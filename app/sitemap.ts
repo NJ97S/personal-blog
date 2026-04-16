@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const postEntries: MetadataRoute.Sitemap = (posts ?? []).map((p) => ({
     url: `${base}/posts/${p.slug}`,
-    lastModified: new Date(p.updated_at),
+    lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
   }))
 
   return [

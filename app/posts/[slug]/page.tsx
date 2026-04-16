@@ -16,11 +16,15 @@ const sanitizeSchema = {
     ...defaultSchema.attributes,
     code: [
       ...(defaultSchema.attributes?.code || []),
-      ['className', /^language-/, /^hljs/],
+      ['className', /^language-[a-z0-9-]+$/, /^hljs(-[a-z0-9-]+)?$/],
     ],
     span: [
       ...(defaultSchema.attributes?.span || []),
-      ['className', /^hljs/],
+      ['className', /^hljs(-[a-z0-9-]+)?$/],
+    ],
+    pre: [
+      ...(defaultSchema.attributes?.pre || []),
+      ['className', /^hljs(-[a-z0-9-]+)?$/],
     ],
   },
 }
