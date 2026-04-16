@@ -1,17 +1,24 @@
 import { notFound } from 'next/navigation'
 import Layout from '@/components/Layout'
+import CategoryPicker from '@/components/CategoryPicker'
 import { createClient } from '@/lib/supabase/server'
+import { fetchCategoryTree } from '@/lib/categories'
 import EditPostForm from './EditPostForm'
 
 export const dynamic = 'force-dynamic'
 
 export default async function EditPostPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
-  const { data: post } = await supabase
-    .from('posts')
-    .select('id, title, slug, content, excerpt, tags, published, cover_image')
-    .eq('id', params.id)
-    .single()
+  const [{ data: post }, tree] = await Promise.all([
+    supabase
+      .from('posts')
+      .select(
+        'id, title, slug, content, excerpt, tags, published, cover_image, category_id',
+      )
+      .eq('id', params.id)
+      .single(),
+    fetchCategoryTree(),
+  ])
 
   if (!post) notFound()
 
@@ -28,7 +35,11 @@ export default async function EditPostPage({ params }: { params: { id: string } 
           tags: post.tags ?? [],
           published: post.published,
           coverImage: post.cover_image ?? '',
+          categoryId: post.category_id ?? null,
         }}
+        categoryPicker={
+          <CategoryPicker categories={tree} defaultValue={post.category_id ?? null} />
+        }
       />
     </Layout>
   )

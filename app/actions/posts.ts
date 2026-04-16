@@ -12,7 +12,11 @@ export type PostInput = {
   tags: string[]
   published: boolean
   coverImage?: string | null
+  categoryId: string | null
 }
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type ActionState = { ok: boolean; error?: string; id?: string }
 
@@ -48,6 +52,8 @@ function parseFormData(formData: FormData): PostInput {
   const tagsRaw = (formData.get('tags') as string | null)?.trim() ?? ''
   const published = formData.get('published') === 'on' || formData.get('published') === 'true'
   const coverImage = ((formData.get('coverImage') as string | null)?.trim() ?? '') || null
+  const categoryIdRaw = (formData.get('categoryId') as string | null)?.trim() ?? ''
+  const categoryId = categoryIdRaw ? categoryIdRaw : null
 
   return {
     title,
@@ -62,6 +68,7 @@ function parseFormData(formData: FormData): PostInput {
       : [],
     published,
     coverImage,
+    categoryId,
   }
 }
 
@@ -74,6 +81,9 @@ function validate(input: PostInput): string | null {
   if (!input.content.trim()) return '내용을 입력해주세요.'
   if (input.coverImage && !isHttpsUrl(input.coverImage)) {
     return '커버 이미지는 https URL 이어야 합니다.'
+  }
+  if (input.categoryId && !UUID_RE.test(input.categoryId)) {
+    return '카테고리 식별자가 올바르지 않습니다.'
   }
   return null
 }
@@ -108,6 +118,7 @@ export async function createPost(
       tags: input.tags,
       published: input.published,
       cover_image: input.coverImage,
+      category_id: input.categoryId,
     })
     .select('id, slug')
     .single()
@@ -128,6 +139,7 @@ export async function updatePost(
 ): Promise<ActionState> {
   const guard = await requireAdmin()
   if (guard.error) return { ok: false, error: guard.error }
+  if (!UUID_RE.test(id)) return { ok: false, error: '잘못된 요청입니다.' }
 
   const input = parseFormData(formData)
   const err = validate(input)
@@ -150,6 +162,7 @@ export async function updatePost(
       tags: input.tags,
       published: input.published,
       cover_image: input.coverImage,
+      category_id: input.categoryId,
     })
     .eq('id', id)
 
@@ -165,6 +178,7 @@ export async function updatePost(
 export async function deletePost(id: string, slug: string): Promise<ActionState> {
   const guard = await requireAdmin()
   if (guard.error) return { ok: false, error: guard.error }
+  if (!UUID_RE.test(id)) return { ok: false, error: '잘못된 요청입니다.' }
   const { error } = await guard.supabase.from('posts').delete().eq('id', id)
   if (error) return { ok: false, error: error.message }
   revalidateAll(slug)

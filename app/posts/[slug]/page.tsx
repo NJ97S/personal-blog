@@ -6,6 +6,7 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import Layout from '@/components/Layout'
 import Comments from '@/components/Comments'
 import { createClient } from '@/lib/supabase/server'
+import { fetchCategoryTree, walkTree } from '@/lib/categories'
 
 export const dynamicParams = true
 export const revalidate = false
@@ -60,19 +61,55 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function PostPage({ params }: { params: { slug: string } }) {
   const supabase = createClient()
 
-  const { data: post } = await supabase
-    .from('posts')
-    .select('id, title, slug, content, tags, published, created_at')
-    .eq('slug', params.slug)
-    .eq('published', true)
-    .single()
+  const [{ data: post }, tree] = await Promise.all([
+    supabase
+      .from('posts')
+      .select('id, title, slug, content, tags, published, created_at, category_id')
+      .eq('slug', params.slug)
+      .eq('published', true)
+      .single(),
+    fetchCategoryTree(),
+  ])
 
   if (!post) notFound()
+
+  const flatNodes = walkTree(tree)
+  const categoryNode = post.category_id
+    ? flatNodes.find((n) => n.id === post.category_id) ?? null
+    : null
+  const ancestors = categoryNode
+    ? categoryNode.path.map((slug, i) => {
+        const path = categoryNode.path.slice(0, i + 1)
+        const node = flatNodes.find((n) => n.path.join('/') === path.join('/'))
+        return { slug, name: node?.name ?? slug, path }
+      })
+    : []
 
   return (
     <Layout>
       <article className="max-w-3xl mx-auto">
         <header className="mb-8 pb-6 border-b border-craft-200 dark:border-ink-600">
+          {ancestors.length > 0 && (
+            <nav
+              aria-label="breadcrumb"
+              className="mb-3 text-xs font-mono text-ink-400 flex flex-wrap items-center gap-1"
+            >
+              <Link href="/" className="hover:text-ink-900 dark:hover:text-craft-50">
+                Home
+              </Link>
+              {ancestors.map((a) => (
+                <span key={a.path.join('/')} className="flex items-center gap-1">
+                  <span aria-hidden>›</span>
+                  <Link
+                    href={`/categories/${a.path.map(encodeURIComponent).join('/')}`}
+                    className="hover:text-ink-900 dark:hover:text-craft-50"
+                  >
+                    {a.name}
+                  </Link>
+                </span>
+              ))}
+            </nav>
+          )}
           <h1 className="text-3xl md:text-4xl font-serif font-bold mb-3">{post.title}</h1>
           <p className="text-sm text-ink-400">{formatDate(post.created_at)}</p>
           {post.tags?.length > 0 && (

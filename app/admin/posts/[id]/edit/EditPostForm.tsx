@@ -13,6 +13,7 @@ type PostDraft = {
   tags: string[]
   published: boolean
   coverImage: string
+  categoryId: string | null
 }
 
 const initialState: ActionState = { ok: false }
@@ -30,7 +31,13 @@ function SubmitButton({ label }: { label: string }) {
   )
 }
 
-export default function EditPostForm({ post }: { post: PostDraft }) {
+export default function EditPostForm({
+  post,
+  categoryPicker,
+}: {
+  post: PostDraft
+  categoryPicker: React.ReactNode
+}) {
   const update = updatePost.bind(null, post.id)
   const [state, formAction] = useFormState(update, initialState)
 
@@ -70,6 +77,8 @@ export default function EditPostForm({ post }: { post: PostDraft }) {
             className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm font-mono"
           />
         </div>
+
+        {categoryPicker}
 
         <div>
           <label htmlFor="tags" className="block text-sm mb-1">
