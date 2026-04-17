@@ -25,7 +25,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        serif: ['var(--font-noto-serif-kr)', 'Noto Serif KR', 'serif'],
+        serif: ['var(--font-kkukkukk)', 'MemomentKkukkukk', 'serif'],
         mono: ['var(--font-jetbrains-mono)', 'JetBrains Mono', 'monospace'],
       },
     },

@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
-import { Noto_Serif_KR, JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
+import { JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-const notoSerifKr = Noto_Serif_KR({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-noto-serif-kr',
+const kkukkukk = localFont({
+  src: './fonts/memoment-kkukkukk.ttf',
+  variable: '--font-kkukkukk',
   display: 'swap',
+  weight: '400',
 })
 
 const jetbrainsMono = JetBrains_Mono({
@@ -32,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${notoSerifKr.variable} ${jetbrainsMono.variable}`}
+      className={`${kkukkukk.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <head>
