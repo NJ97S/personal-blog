@@ -31,6 +31,12 @@ export default async function AdminPostsPage({
         <h1 className="text-2xl font-serif font-bold">글 관리</h1>
         <div className="flex gap-2">
           <Link
+            href="/admin/categories"
+            className="craft-card px-4 py-2 text-sm hover:bg-craft-100 dark:hover:bg-ink-800"
+          >
+            카테고리 관리
+          </Link>
+          <Link
             href="/admin/posts/new"
             className="craft-card px-4 py-2 text-sm bg-craft-100 dark:bg-ink-800 hover:bg-craft-200 dark:hover:bg-ink-600"
           >
