@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
+import remarkBreaks from 'remark-breaks'
 import '@uiw/react-md-editor/markdown-editor.css'
 import '@uiw/react-markdown-preview/markdown.css'
 
@@ -12,13 +13,17 @@ const MDEditor = dynamic(() => import('@uiw/react-md-editor'), {
   ),
 })
 
+type Props = {
+  name: string
+  defaultValue?: string
+  height?: number | string
+}
+
 export default function MarkdownEditor({
   name,
   defaultValue = '',
-}: {
-  name: string
-  defaultValue?: string
-}) {
+  height = 500,
+}: Props) {
   const [value, setValue] = useState<string>(defaultValue)
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light')
 
@@ -37,8 +42,9 @@ export default function MarkdownEditor({
       <MDEditor
         value={value}
         onChange={(val) => setValue(val ?? '')}
-        height={500}
+        height={height}
         preview="live"
+        previewOptions={{ remarkPlugins: [remarkBreaks] }}
       />
     </div>
   )

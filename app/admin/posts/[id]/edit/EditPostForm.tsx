@@ -91,7 +91,7 @@ export default function EditPostForm({
         <div className="space-y-6">
           <TitleInput name="title" required defaultValue={post.title} />
           <TagInput name="tags" defaultTags={post.tags} />
-          <MarkdownEditor name="content" defaultValue={post.content} />
+          <MarkdownEditor name="content" defaultValue={post.content} height="calc(100vh - 260px)" />
         </div>
       </PostEditorShell>
 

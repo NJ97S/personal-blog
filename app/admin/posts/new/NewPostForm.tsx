@@ -86,7 +86,7 @@ export default function NewPostForm({
         <div className="space-y-6">
           <TitleInput name="title" required onBlur={onTitleBlur} />
           <TagInput name="tags" />
-          <MarkdownEditor name="content" />
+          <MarkdownEditor name="content" height="calc(100vh - 260px)" />
         </div>
       </PostEditorShell>
 

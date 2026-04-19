@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
+import remarkBreaks from 'remark-breaks'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import Layout from '@/components/Layout'
@@ -130,6 +131,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
         <div className="craft-prose prose-neutral dark:prose-invert">
           <ReactMarkdown
+            remarkPlugins={[remarkBreaks]}
             rehypePlugins={[rehypeHighlight, [rehypeSanitize, sanitizeSchema]]}
           >
             {post.content}
