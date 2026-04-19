@@ -22,7 +22,7 @@
 
 @layer utilities {
   .craft-card {
-    @apply rounded-sm border border-craft-200 bg-craft-100/60 dark:bg-ink-800/40 dark:border-ink-600;
+    @apply rounded-lg border border-craft-200 bg-craft-100/60 dark:bg-ink-800/40 dark:border-ink-600;
   }
   .craft-prose {
     @apply prose max-w-none;
