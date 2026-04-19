@@ -1,3 +1,5 @@
+import { Search } from 'lucide-react'
+
 export default function SearchBox() {
   return (
     <form
@@ -10,9 +12,7 @@ export default function SearchBox() {
         검색
       </label>
       <div className="flex items-center gap-2">
-        <span aria-hidden className="text-ink-400">
-          🔍
-        </span>
+        <Search aria-hidden className="h-4 w-4 text-ink-400" />
         <input
           id="search-q"
           name="q"
