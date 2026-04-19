@@ -20,7 +20,7 @@ const UUID_RE =
 
 export type ActionState = { ok: boolean; error?: string; id?: string }
 
-async function requireAdmin() {
+export async function requireAdmin() {
   const supabase = createClient()
   const {
     data: { user },
