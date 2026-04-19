@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function PopularPosts() {
@@ -16,7 +17,7 @@ export default async function PopularPosts() {
   return (
     <section className="craft-card p-4">
       <h3 className="font-serif font-bold text-sm mb-3 flex items-center gap-1.5">
-        <span aria-hidden>🔥</span>
+        <TrendingUp aria-hidden className="h-4 w-4 text-ink-500 dark:text-craft-200" />
         <span>인기 글</span>
       </h3>
       {posts.length === 0 ? (
