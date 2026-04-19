@@ -12,8 +12,10 @@ import Comments from '@/components/Comments'
 import PostToc from '@/components/PostToc'
 import SeriesBox from '@/components/SeriesBox'
 import ShareButton from '@/components/ShareButton'
+import JsonLd from '@/components/JsonLd'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
+import { site } from '@/lib/site'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -55,41 +57,68 @@ function formatDate(iso: string) {
   }
 }
 
+function decodeSlug(raw: string): string {
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
+}
+
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const supabase = createClient()
-  let slug = params.slug
-  try {
-    slug = decodeURIComponent(params.slug)
-  } catch {
-    // keep raw value if decode fails
-  }
+  const slug = decodeSlug(params.slug)
   const { data: post } = await supabase
     .from('posts')
-    .select('title, excerpt')
+    .select('title, excerpt, tags, cover_image, created_at, updated_at')
     .eq('slug', slug)
     .eq('published', true)
     .maybeSingle()
 
   if (!post) return { title: '글을 찾을 수 없습니다' }
+
+  const canonicalPath = `/posts/${encodeURI(slug)}`
+  const description = post.excerpt ?? site.description
+  const images = post.cover_image ? [{ url: post.cover_image }] : undefined
+
   return {
     title: post.title,
-    description: post.excerpt ?? undefined,
+    description,
+    authors: [{ name: site.author.name, url: site.author.url }],
+    keywords: post.tags ?? undefined,
+    alternates: { canonical: canonicalPath },
+    openGraph: {
+      type: 'article',
+      url: canonicalPath,
+      title: post.title,
+      description,
+      siteName: site.name,
+      locale: site.locale,
+      publishedTime: post.created_at ?? undefined,
+      modifiedTime: post.updated_at ?? undefined,
+      authors: [site.author.name],
+      tags: post.tags ?? undefined,
+      images,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description,
+      images: post.cover_image ? [post.cover_image] : undefined,
+    },
   }
 }
 
 export default async function PostPage({ params }: { params: { slug: string } }) {
   const supabase = createClient()
-  let slug = params.slug
-  try {
-    slug = decodeURIComponent(params.slug)
-  } catch {
-    // keep raw value if decode fails
-  }
+  const slug = decodeSlug(params.slug)
 
   const [{ data: post }, tree] = await Promise.all([
     supabase
       .from('posts')
-      .select('id, title, slug, content, tags, published, created_at, category_id')
+      .select(
+        'id, title, slug, content, excerpt, tags, published, cover_image, created_at, updated_at, category_id',
+      )
       .eq('slug', slug)
       .eq('published', true)
       .maybeSingle(),
@@ -132,8 +161,59 @@ export default async function PostPage({ params }: { params: { slug: string } })
       ? seriesPosts[currentIdx + 1]
       : null
 
+  const postUrl = `${site.url}/posts/${encodeURI(slug)}`
+
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.excerpt ?? site.description,
+    datePublished: post.created_at,
+    dateModified: post.updated_at ?? post.created_at,
+    author: {
+      '@type': 'Person',
+      name: site.author.name,
+      url: site.author.url,
+    },
+    publisher: {
+      '@type': 'Person',
+      name: site.author.name,
+      url: site.author.url,
+    },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': postUrl },
+    ...(post.cover_image ? { image: [post.cover_image] } : {}),
+    ...(post.tags?.length ? { keywords: post.tags.join(', ') } : {}),
+  }
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: site.url,
+      },
+      ...ancestors.map((a, i) => ({
+        '@type': 'ListItem',
+        position: i + 2,
+        name: a.name,
+        item: `${site.url}/categories/${a.path.map(encodeURIComponent).join('/')}`,
+      })),
+      {
+        '@type': 'ListItem',
+        position: ancestors.length + 2,
+        name: post.title,
+        item: postUrl,
+      },
+    ],
+  }
+
   return (
     <Layout rightAside={<PostToc />}>
+      <JsonLd data={articleSchema} />
+      <JsonLd data={breadcrumbSchema} />
       <article className="max-w-3xl mx-auto">
         <header className="mb-8">
           {ancestors.length > 0 && (

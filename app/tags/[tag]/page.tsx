@@ -2,12 +2,29 @@ import Layout from '@/components/Layout'
 import PostCard from '@/components/PostCard'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
+import { site } from '@/lib/site'
 
 export const revalidate = 60
 
 export async function generateMetadata({ params }: { params: { tag: string } }) {
   const tag = decodeURIComponent(params.tag)
-  return { title: `#${tag}` }
+  const canonicalPath = `/tags/${encodeURIComponent(tag)}`
+  const title = `#${tag}`
+  const description = `#${tag} 태그의 글 모음 · ${site.name}`
+  return {
+    title,
+    description,
+    alternates: { canonical: canonicalPath },
+    openGraph: {
+      type: 'website',
+      url: canonicalPath,
+      title,
+      description,
+      siteName: site.name,
+      locale: site.locale,
+    },
+    twitter: { card: 'summary_large_image', title, description },
+  }
 }
 
 export default async function TagPage({ params }: { params: { tag: string } }) {

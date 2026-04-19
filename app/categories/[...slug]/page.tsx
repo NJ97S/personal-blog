@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
 import PostCard from '@/components/PostCard'
+import JsonLd from '@/components/JsonLd'
 import { createClient } from '@/lib/supabase/server'
 import {
   findCategoryByPath,
@@ -9,6 +10,7 @@ import {
   fetchCategoryTree,
   walkTree,
 } from '@/lib/categories'
+import { site } from '@/lib/site'
 
 export const revalidate = 60
 
@@ -21,7 +23,23 @@ export async function generateMetadata({ params }: { params: Params }) {
   const slugs = params.slug.map((s) => decodeURIComponent(s))
   const node = await findCategoryByPath(slugs)
   if (!node) return { title: '카테고리' }
-  return { title: `${node.name} 카테고리` }
+  const canonicalPath = `/categories/${slugs.map(encodeURIComponent).join('/')}`
+  const title = `${node.name} 카테고리`
+  const description = `${node.name} 카테고리의 글 모음 · ${site.name}`
+  return {
+    title,
+    description,
+    alternates: { canonical: canonicalPath },
+    openGraph: {
+      type: 'website',
+      url: canonicalPath,
+      title,
+      description,
+      siteName: site.name,
+      locale: site.locale,
+    },
+    twitter: { card: 'summary_large_image', title, description },
+  }
 }
 
 export default async function CategoryPage({
@@ -67,8 +85,25 @@ export default async function CategoryPage({
 
   const categoryById = new Map(all.map((n) => [n.id, n] as const))
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: site.url },
+      ...breadcrumbNodes.map((bn, i) => ({
+        '@type': 'ListItem',
+        position: i + 2,
+        name: bn?.name ?? slugs[i],
+        item: bn
+          ? `${site.url}/categories/${bn.path.map(encodeURIComponent).join('/')}`
+          : `${site.url}/categories/${slugs.slice(0, i + 1).map(encodeURIComponent).join('/')}`,
+      })),
+    ],
+  }
+
   return (
     <Layout>
+      <JsonLd data={breadcrumbSchema} />
       <section className="mb-6">
         <nav
           aria-label="breadcrumb"

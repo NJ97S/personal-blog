@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import Layout from '@/components/Layout'
 import PostCard from '@/components/PostCard'
+import JsonLd from '@/components/JsonLd'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
+import { site } from '@/lib/site'
 
 const PAGE_SIZE = 10
 
@@ -37,8 +39,31 @@ export default async function Home({
 
   const categoryById = new Map(walkTree(tree).map((n) => [n.id, n] as const))
 
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: site.name,
+    description: site.description,
+    url: site.url,
+    inLanguage: 'ko',
+    publisher: {
+      '@type': 'Person',
+      name: site.author.name,
+      url: site.author.url,
+    },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${site.url}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  }
+
   return (
     <Layout>
+      <JsonLd data={websiteSchema} />
       <section className="mb-8">
         <h1 className="text-3xl font-serif font-bold mb-2">ShyLog</h1>
         <p className="text-ink-400">종이 위에 남기는 작은 기술 노트들</p>

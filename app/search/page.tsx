@@ -17,7 +17,10 @@ function sanitize(q: string): string {
 
 export function generateMetadata({ searchParams }: { searchParams: SearchParams }) {
   const q = sanitize(searchParams.q ?? '')
-  return { title: q ? `검색: ${q}` : '검색' }
+  return {
+    title: q ? `검색: ${q}` : '검색',
+    robots: { index: false, follow: true },
+  }
 }
 
 export default async function SearchPage({
