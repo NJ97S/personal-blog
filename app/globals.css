@@ -1,3 +1,5 @@
+@import 'highlight.js/styles/github-dark.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -29,7 +31,31 @@
   }
 }
 
-/* Base highlight.js (dark-agnostic) styling — consumers can override */
-.hljs {
-  background: transparent;
+/* Callout — velog layout using the craft palette */
+.craft-prose blockquote {
+  @apply my-6 rounded-r-lg border-l-4 border-craft-400 dark:border-craft-300 bg-craft-100 dark:bg-ink-800/50 px-5 py-4 not-italic;
+}
+.craft-prose blockquote p {
+  @apply my-0;
+}
+.craft-prose blockquote p::before,
+.craft-prose blockquote p::after {
+  content: '' !important;
+}
+
+/* Code blocks: force github-dark chrome on pre, keep hljs syntax colors */
+.craft-prose pre {
+  background-color: #0d1117 !important;
+  color: #c9d1d9 !important;
+  padding: 1rem 1.25rem !important;
+  border-radius: 0.5rem !important;
+  overflow-x: auto !important;
+  margin: 1.5rem 0 !important;
+}
+.craft-prose pre code,
+.craft-prose pre code.hljs {
+  background-color: transparent !important;
+  color: inherit;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
