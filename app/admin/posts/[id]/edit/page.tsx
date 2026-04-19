@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Layout from '@/components/Layout'
 import CategoryPicker from '@/components/CategoryPicker'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree } from '@/lib/categories'
@@ -23,7 +22,7 @@ export default async function EditPostPage({ params }: { params: { id: string } 
   if (!post) notFound()
 
   return (
-    <Layout>
+    <main className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-2xl font-serif font-bold mb-6">글 편집</h1>
       <EditPostForm
         post={{
@@ -41,6 +40,6 @@ export default async function EditPostPage({ params }: { params: { id: string } 
           <CategoryPicker categories={tree} defaultValue={post.category_id ?? null} />
         }
       />
-    </Layout>
+    </main>
   )
 }
