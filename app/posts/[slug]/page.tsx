@@ -57,12 +57,18 @@ function formatDate(iso: string) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const supabase = createClient()
+  let slug = params.slug
+  try {
+    slug = decodeURIComponent(params.slug)
+  } catch {
+    // keep raw value if decode fails
+  }
   const { data: post } = await supabase
     .from('posts')
     .select('title, excerpt')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .eq('published', true)
-    .single()
+    .maybeSingle()
 
   if (!post) return { title: '글을 찾을 수 없습니다' }
   return {
