@@ -33,7 +33,7 @@ export default function PostToc() {
           .sort((a, b) => a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top)
         if (visible[0]) setActiveId(visible[0].target.id)
       },
-      { rootMargin: '-20% 0% -60% 0%' },
+      { rootMargin: '-80px 0px -70% 0px' },
     )
 
     collected.forEach((h) => {

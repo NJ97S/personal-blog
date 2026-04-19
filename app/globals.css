@@ -7,6 +7,7 @@
 @layer base {
   html {
     @apply bg-craft-50 text-ink-900;
+    scroll-padding-top: 80px;
   }
   html.dark {
     @apply bg-ink-900 text-craft-50;
