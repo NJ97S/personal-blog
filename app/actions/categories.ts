@@ -29,7 +29,9 @@ function validate(input: CategoryInput): string | null {
 }
 
 function revalidateAll() {
-  revalidatePath('/', 'layout')
+  revalidatePath('/')
+  revalidatePath('/categories/[...slug]', 'page')
+  revalidatePath('/posts/[slug]', 'page')
   revalidatePath('/admin/categories')
   revalidatePath('/admin/posts')
   revalidatePath('/sitemap.xml')
