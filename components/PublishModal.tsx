@@ -156,7 +156,7 @@ export default function PublishModal({
                 name="slug"
                 type="text"
                 defaultValue={defaultSlug}
-                pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                pattern="^[a-zA-Z0-9가-힣]+(?:-[a-zA-Z0-9가-힣]+)*$"
                 className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm font-mono"
               />
             </div>

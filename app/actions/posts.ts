@@ -79,8 +79,8 @@ function parseFormData(formData: FormData): PostInput {
 function validate(input: PostInput): string | null {
   if (!input.title) return '제목을 입력해주세요.'
   if (input.published && !input.slug) return 'slug 를 입력해주세요.'
-  if (input.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.slug)) {
-    return 'slug 형식이 올바르지 않습니다. (소문자, 숫자, 하이픈만)'
+  if (input.slug && !/^[a-zA-Z0-9가-힣]+(?:-[a-zA-Z0-9가-힣]+)*$/.test(input.slug)) {
+    return 'slug 형식이 올바르지 않습니다. (문자/숫자/하이픈만, 공백·특수문자 불가)'
   }
   if (input.published && !input.content.trim()) return '내용을 입력해주세요.'
   if (input.coverImage && !isHttpsUrl(input.coverImage)) {

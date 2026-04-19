@@ -17,8 +17,7 @@ function slugify(input: string) {
   return input
     .toLowerCase()
     .trim()
-    .replace(/[가-힣]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[^a-z0-9가-힣\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
