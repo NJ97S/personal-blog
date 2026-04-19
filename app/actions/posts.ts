@@ -46,7 +46,7 @@ function isHttpsUrl(value: string): boolean {
 
 function parseFormData(formData: FormData): PostInput {
   const title = (formData.get('title') as string | null)?.trim() ?? ''
-  const slug = (formData.get('slug') as string | null)?.trim() ?? ''
+  let slug = (formData.get('slug') as string | null)?.trim() ?? ''
   const content = (formData.get('content') as string | null) ?? ''
   const excerptRaw = (formData.get('excerpt') as string | null)?.trim() ?? ''
   const tagsRaw = (formData.get('tags') as string | null)?.trim() ?? ''
@@ -54,6 +54,10 @@ function parseFormData(formData: FormData): PostInput {
   const coverImage = ((formData.get('coverImage') as string | null)?.trim() ?? '') || null
   const categoryIdRaw = (formData.get('categoryId') as string | null)?.trim() ?? ''
   const categoryId = categoryIdRaw ? categoryIdRaw : null
+
+  if (!slug && !published) {
+    slug = `draft-${Date.now()}`
+  }
 
   return {
     title,
@@ -74,11 +78,11 @@ function parseFormData(formData: FormData): PostInput {
 
 function validate(input: PostInput): string | null {
   if (!input.title) return '제목을 입력해주세요.'
-  if (!input.slug) return 'slug 를 입력해주세요.'
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.slug)) {
+  if (input.published && !input.slug) return 'slug 를 입력해주세요.'
+  if (input.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.slug)) {
     return 'slug 형식이 올바르지 않습니다. (소문자, 숫자, 하이픈만)'
   }
-  if (!input.content.trim()) return '내용을 입력해주세요.'
+  if (input.published && !input.content.trim()) return '내용을 입력해주세요.'
   if (input.coverImage && !isHttpsUrl(input.coverImage)) {
     return '커버 이미지는 https URL 이어야 합니다.'
   }
