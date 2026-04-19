@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 
 export const dynamicParams = true
-export const revalidate = false
+export const revalidate = 60
 
 const sanitizeSchema = {
   ...defaultSchema,
@@ -73,14 +73,20 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function PostPage({ params }: { params: { slug: string } }) {
   const supabase = createClient()
+  let slug = params.slug
+  try {
+    slug = decodeURIComponent(params.slug)
+  } catch {
+    // keep raw value if decode fails
+  }
 
   const [{ data: post }, tree] = await Promise.all([
     supabase
       .from('posts')
       .select('id, title, slug, content, tags, published, created_at, category_id')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .eq('published', true)
-      .single(),
+      .maybeSingle(),
     fetchCategoryTree(),
   ])
 
