@@ -3,7 +3,13 @@ import Footer from './Footer'
 import CategorySidebar from './CategorySidebar'
 import SideWidgets from './SideWidgets'
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout({
+  children,
+  rightAside,
+}: {
+  children: React.ReactNode
+  rightAside?: React.ReactNode
+}) {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -19,7 +25,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </aside>
         <main className="min-w-0">{children}</main>
         <aside className="hidden lg:block">
-          <SideWidgets />
+          {rightAside ?? <SideWidgets />}
         </aside>
       </div>
       <Footer />
