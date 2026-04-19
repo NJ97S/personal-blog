@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeSlug from 'rehype-slug'
@@ -185,7 +185,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
         <div className="craft-prose prose-neutral dark:prose-invert">
           <ReactMarkdown
-            remarkPlugins={[remarkBreaks]}
+            remarkPlugins={[remarkGfm, remarkBreaks]}
             rehypePlugins={[
               rehypeSlug,
               rehypeHighlight,
@@ -195,22 +195,6 @@ export default async function PostPage({ params }: { params: { slug: string } })
             {post.content}
           </ReactMarkdown>
         </div>
-
-        <section className="mt-16 flex items-center gap-4 border-t border-craft-200 dark:border-ink-600 pt-8">
-          <Image
-            src="/profile.jpeg"
-            alt="Soshy"
-            width={64}
-            height={64}
-            className="h-16 w-16 shrink-0 rounded-full object-cover"
-          />
-          <div className="min-w-0">
-            <p className="font-serif font-bold text-lg">Soshy</p>
-            <p className="text-sm text-ink-500 dark:text-craft-200">
-              풀 스택 개발자를 지향하는 프론트엔드 개발자 소남주입니다.
-            </p>
-          </div>
-        </section>
 
         {(prevPost || nextPost) && (
           <nav
