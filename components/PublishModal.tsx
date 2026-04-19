@@ -1,9 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Globe, Lock } from 'lucide-react'
+import { X, Globe, Lock, Upload } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const EXCERPT_MAX = 150
+const MAX_COVER_BYTES = 5 * 1024 * 1024
+const ALLOWED_COVER_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 type Props = {
   open: boolean
@@ -32,6 +35,9 @@ export default function PublishModal({
     defaultPublished ? 'public' : 'private',
   )
   const [excerpt, setExcerpt] = useState(defaultExcerpt)
+  const [coverImage, setCoverImage] = useState(defaultCoverImage)
+  const [uploading, setUploading] = useState(false)
+  const [coverError, setCoverError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -41,6 +47,43 @@ export default function PublishModal({
     window.addEventListener('keydown', onEsc)
     return () => window.removeEventListener('keydown', onEsc)
   }, [open, onClose])
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setCoverError(null)
+
+    if (!ALLOWED_COVER_TYPES.includes(file.type)) {
+      setCoverError('JPEG, PNG, WebP 파일만 업로드할 수 있습니다.')
+      return
+    }
+    if (file.size > MAX_COVER_BYTES) {
+      setCoverError('파일 크기는 최대 5MB 까지 가능합니다.')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
+      const name = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('post-covers')
+        .upload(name, file, { cacheControl: '3600', upsert: false })
+      if (upErr) throw upErr
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('post-covers').getPublicUrl(name)
+      setCoverImage(publicUrl)
+    } catch (err) {
+      setCoverError(
+        err instanceof Error ? `업로드 실패: ${err.message}` : '업로드 실패',
+      )
+    } finally {
+      setUploading(false)
+    }
+  }
 
   return (
     <>
@@ -74,16 +117,68 @@ export default function PublishModal({
         <div className="grid grid-cols-1 gap-6 p-5 md:grid-cols-2">
           <div className="space-y-4">
             <div>
-              <label htmlFor="coverImage" className="block text-sm font-bold mb-1.5">
-                썸네일 이미지 URL
-              </label>
+              <p className="block text-sm font-bold mb-1.5">썸네일 이미지</p>
               <input
-                id="coverImage"
+                type="hidden"
                 name="coverImage"
+                value={coverImage}
+                readOnly
+              />
+              {coverImage && (
+                <div className="mb-2 relative aspect-video overflow-hidden rounded-sm border border-craft-200 dark:border-ink-600 bg-craft-100 dark:bg-ink-800">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={coverImage}
+                    alt="썸네일 미리보기"
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm border border-craft-200 dark:border-ink-600 px-3 py-1.5 text-sm hover:bg-craft-100 dark:hover:bg-ink-800">
+                  <Upload className="h-4 w-4" aria-hidden />
+                  {coverImage ? '파일 교체' : '파일 선택'}
+                  <input
+                    type="file"
+                    accept={ALLOWED_COVER_TYPES.join(',')}
+                    onChange={onFileChange}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                </label>
+                {coverImage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoverImage('')
+                      setCoverError(null)
+                    }}
+                    className="text-sm text-ink-400 hover:text-red-600"
+                  >
+                    제거
+                  </button>
+                )}
+              </div>
+              {uploading && (
+                <p className="mt-1 text-xs text-ink-400">업로드 중…</p>
+              )}
+              {coverError && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                  {coverError}
+                </p>
+              )}
+              <p className="mt-2 text-xs text-ink-400">
+                또는 URL 직접 입력 (JPEG/PNG/WebP · 최대 5MB)
+              </p>
+              <input
                 type="url"
-                defaultValue={defaultCoverImage}
+                value={coverImage}
+                onChange={(e) => setCoverImage(e.target.value)}
                 placeholder="https://…"
-                className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm font-mono"
+                className="mt-1 w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm font-mono"
               />
             </div>
 
@@ -186,7 +281,8 @@ export default function PublishModal({
             type="submit"
             name="published"
             value={visibility === 'public' ? 'true' : 'false'}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-800 dark:border-craft-50 bg-ink-800 dark:bg-craft-50 px-4 py-1.5 text-sm text-craft-50 dark:text-ink-900 hover:bg-ink-600 dark:hover:bg-craft-200"
+            disabled={uploading}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-ink-800 dark:border-craft-50 bg-ink-800 dark:bg-craft-50 px-4 py-1.5 text-sm text-craft-50 dark:text-ink-900 hover:bg-ink-600 dark:hover:bg-craft-200 disabled:opacity-50"
           >
             {visibility === 'public' ? '출간하기' : '비공개 저장'}
           </button>
