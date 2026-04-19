@@ -22,24 +22,21 @@ export default async function EditPostPage({ params }: { params: { id: string } 
   if (!post) notFound()
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-serif font-bold mb-6">글 편집</h1>
-      <EditPostForm
-        post={{
-          id: post.id,
-          title: post.title,
-          slug: post.slug,
-          content: post.content,
-          excerpt: post.excerpt ?? '',
-          tags: post.tags ?? [],
-          published: post.published,
-          coverImage: post.cover_image ?? '',
-          categoryId: post.category_id ?? null,
-        }}
-        categoryPicker={
-          <CategoryPicker categories={tree} defaultValue={post.category_id ?? null} />
-        }
-      />
-    </main>
+    <EditPostForm
+      post={{
+        id: post.id,
+        title: post.title,
+        slug: post.slug,
+        content: post.content,
+        excerpt: post.excerpt ?? '',
+        tags: post.tags ?? [],
+        published: post.published,
+        coverImage: post.cover_image ?? '',
+        categoryId: post.category_id ?? null,
+      }}
+      categoryPicker={
+        <CategoryPicker categories={tree} defaultValue={post.category_id ?? null} />
+      }
+    />
   )
 }
