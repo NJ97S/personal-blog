@@ -133,7 +133,7 @@ export async function createPost(
   }
 
   revalidateAll(data.slug)
-  redirect(`/admin/posts/${data.id}/edit`)
+  redirect(input.published ? '/admin/posts' : `/admin/posts/${data.id}/edit`)
 }
 
 export async function updatePost(
@@ -176,6 +176,7 @@ export async function updatePost(
   }
 
   revalidateAll(input.slug, oldSlug ?? '')
+  if (input.published) redirect('/admin/posts')
   return { ok: true }
 }
 
