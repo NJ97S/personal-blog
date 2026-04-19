@@ -24,11 +24,24 @@ export default function ThemeToggle() {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={isDark}
+      aria-label="다크 모드 전환"
       onClick={toggle}
-      aria-label="테마 전환"
-      className="rounded-sm border border-craft-200 dark:border-ink-600 px-3 py-1.5 text-sm hover:bg-craft-100 dark:hover:bg-ink-800 transition-colors"
+      className="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border border-craft-200 dark:border-ink-600 bg-craft-100 dark:bg-ink-800 transition-colors"
     >
-      {isDark ? '☀ 라이트' : '☾ 다크'}
+      <span aria-hidden className="absolute left-1.5 text-[10px] leading-none text-ink-400">
+        ☀
+      </span>
+      <span aria-hidden className="absolute right-1.5 text-[10px] leading-none text-ink-400">
+        ☾
+      </span>
+      <span
+        aria-hidden
+        className={`relative z-10 inline-block h-5 w-5 rounded-full bg-white dark:bg-craft-50 shadow transition-transform ${
+          isDark ? 'translate-x-6' : 'translate-x-0.5'
+        }`}
+      />
     </button>
   )
 }
