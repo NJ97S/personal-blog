@@ -15,13 +15,12 @@ function formatDate(iso: string) {
 
 export default async function RecentPosts() {
   const supabase = createClient()
-  // PopularPosts와 겹치지 않도록 상위 5건 이후를 보여준다 (view_count 도입 전 임시)
   const { data } = await supabase
     .from('posts')
     .select('id, title, slug, created_at')
     .eq('published', true)
     .order('created_at', { ascending: false })
-    .range(5, 9)
+    .limit(5)
 
   const posts = data ?? []
 
