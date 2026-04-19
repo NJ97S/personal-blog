@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import { JetBrains_Mono } from 'next/font/google'
+import { site } from '@/lib/site'
 import './globals.css'
 
 const kkukkukk = localFont({
@@ -17,12 +18,52 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 })
 
+const naverVerification = process.env.NEXT_PUBLIC_NAVER_VERIFICATION
+
 export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
   title: {
-    default: 'ShyLog — 개인 기술 블로그',
-    template: '%s · ShyLog',
+    default: site.title,
+    template: `%s · ${site.name}`,
   },
-  description: '크래프트 종이 노트 감성의 기술 블로그',
+  description: site.description,
+  applicationName: site.name,
+  authors: [{ name: site.author.name, url: site.author.url }],
+  creator: site.author.name,
+  publisher: site.author.name,
+  alternates: {
+    canonical: '/',
+    types: {
+      'application/rss+xml': [{ url: '/rss.xml', title: `${site.name} RSS` }],
+    },
+  },
+  openGraph: {
+    type: 'website',
+    siteName: site.name,
+    locale: site.locale,
+    url: '/',
+    title: site.title,
+    description: site.description,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: site.title,
+    description: site.description,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+    },
+  },
+  verification: naverVerification
+    ? { other: { 'naver-site-verification': naverVerification } }
+    : undefined,
 }
 
 export default function RootLayout({
