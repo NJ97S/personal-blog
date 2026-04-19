@@ -40,7 +40,7 @@ export default async function Home({
   return (
     <Layout>
       <section className="mb-8">
-        <h1 className="text-3xl font-serif font-bold mb-2">기록</h1>
+        <h1 className="text-3xl font-serif font-bold mb-2">ShyLog</h1>
         <p className="text-ink-400">종이 위에 남기는 작은 기술 노트들</p>
       </section>
 

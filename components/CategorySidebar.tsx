@@ -15,7 +15,7 @@ export default async function CategorySidebar() {
             記
           </div>
           <div>
-            <p className="font-serif font-bold text-sm">기록</p>
+            <p className="font-serif font-bold text-sm">ShyLog</p>
             <p className="text-xs text-ink-400">종이 위에 남기는 기술 노트</p>
           </div>
         </div>

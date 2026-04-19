@@ -11,7 +11,7 @@ export default async function Header() {
         <div className="flex items-center gap-2">
           <CategoryDrawer tree={tree} />
           <Link href="/" className="text-xl font-serif font-bold tracking-tight">
-            기록
+            ShyLog
           </Link>
         </div>
         <nav className="flex items-center gap-4 text-sm">

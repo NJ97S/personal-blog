@@ -19,8 +19,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: '기록 — 개인 기술 블로그',
-    template: '%s · 기록',
+    default: 'ShyLog — 개인 기술 블로그',
+    template: '%s · ShyLog',
   },
   description: '크래프트 종이 노트 감성의 기술 블로그',
 }
