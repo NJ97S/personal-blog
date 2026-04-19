@@ -15,9 +15,6 @@ export default async function Header() {
           </Link>
         </div>
         <nav className="flex items-center gap-4 text-sm">
-          <Link href="/" className="hover:underline underline-offset-4">
-            글
-          </Link>
           <ThemeToggle />
         </nav>
       </div>
