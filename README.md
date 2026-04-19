@@ -151,9 +151,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY>
 # (선택) Rate limiting용 Upstash Redis
 UPSTASH_REDIS_REST_URL=<URL>
 UPSTASH_REDIS_REST_TOKEN=<TOKEN>
-
-# (선택) 공개 사이트 URL — sitemap/OG에 사용
-NEXT_PUBLIC_SITE_URL=https://www.shylog.com
 ```
 Supabase 키는 Dashboard → Settings → API 에서 확인.
 
