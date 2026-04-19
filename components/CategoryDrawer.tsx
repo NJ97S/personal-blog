@@ -30,19 +30,28 @@ export default function CategoryDrawer({ tree }: Props) {
     }
   }, [open])
 
-  const drawer = open ? (
+  const drawer = (
     <div
       role="dialog"
-      aria-modal="true"
+      aria-modal={open}
       aria-label="카테고리"
-      className="fixed inset-0 z-50 md:hidden"
+      aria-hidden={!open}
+      className={`fixed inset-0 z-50 md:hidden ${
+        open ? 'pointer-events-auto' : 'pointer-events-none'
+      }`}
     >
       <div
-        className="absolute inset-0 bg-ink-900/50"
-        onClick={() => setOpen(false)}
         aria-hidden
+        onClick={() => setOpen(false)}
+        className={`absolute inset-0 bg-ink-900/50 transition-opacity duration-200 ${
+          open ? 'opacity-100' : 'opacity-0'
+        }`}
       />
-      <aside className="relative h-full w-72 max-w-[85vw] bg-craft-50 dark:bg-ink-900 border-r border-craft-200 dark:border-ink-600 p-4 overflow-y-auto shadow-lg">
+      <aside
+        className={`relative h-full w-72 max-w-[85vw] bg-craft-50 dark:bg-ink-900 border-r border-craft-200 dark:border-ink-600 p-4 overflow-y-auto shadow-lg transition-transform duration-200 ease-out ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-serif font-bold">카테고리</h2>
           <button
@@ -57,7 +66,7 @@ export default function CategoryDrawer({ tree }: Props) {
         <CategoryTree nodes={tree} onNavigate={() => setOpen(false)} />
       </aside>
     </div>
-  ) : null
+  )
 
   return (
     <>
@@ -69,7 +78,7 @@ export default function CategoryDrawer({ tree }: Props) {
       >
         ☰
       </button>
-      {mounted && drawer ? createPortal(drawer, document.body) : null}
+      {mounted ? createPortal(drawer, document.body) : null}
     </>
   )
 }
