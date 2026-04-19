@@ -10,7 +10,7 @@ import {
   walkTree,
 } from '@/lib/categories'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 const PAGE_SIZE = 10
 

@@ -3,7 +3,7 @@ import PostCard from '@/components/PostCard'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export async function generateMetadata({ params }: { params: { tag: string } }) {
   const tag = decodeURIComponent(params.tag)
