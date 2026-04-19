@@ -2,7 +2,8 @@
 
 type Props = {
   name?: string
-  defaultValue?: string
+  value: string
+  onChange: (value: string) => void
   required?: boolean
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void
   placeholder?: string
@@ -10,7 +11,8 @@ type Props = {
 
 export default function TitleInput({
   name = 'title',
-  defaultValue,
+  value,
+  onChange,
   required,
   onBlur,
   placeholder = '제목을 입력하세요',
@@ -19,7 +21,8 @@ export default function TitleInput({
     <input
       type="text"
       name={name}
-      defaultValue={defaultValue}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
       required={required}
       onBlur={onBlur}
       placeholder={placeholder}

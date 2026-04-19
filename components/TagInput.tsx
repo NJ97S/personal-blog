@@ -9,12 +9,14 @@ type Props = {
   name?: string
   defaultTags?: string[]
   placeholder?: string
+  onDirty?: () => void
 }
 
 export default function TagInput({
   name = 'tags',
   defaultTags = [],
   placeholder = '태그를 입력하세요 (Enter/쉼표로 추가)',
+  onDirty,
 }: Props) {
   const [tags, setTags] = useState<string[]>(defaultTags)
   const [draft, setDraft] = useState('')
@@ -26,10 +28,12 @@ export default function TagInput({
     if (tags.length >= MAX_TAGS) return
     if (tags.some((existing) => existing.toLowerCase() === t.toLowerCase())) return
     setTags((prev) => [...prev, t])
+    onDirty?.()
   }
 
   const removeAt = (idx: number) => {
     setTags((prev) => prev.filter((_, i) => i !== idx))
+    onDirty?.()
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
