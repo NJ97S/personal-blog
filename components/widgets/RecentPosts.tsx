@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 function formatDate(iso: string) {
@@ -27,7 +28,7 @@ export default async function RecentPosts() {
   return (
     <section className="craft-card p-4">
       <h3 className="font-serif font-bold text-sm mb-3 flex items-center gap-1.5">
-        <span aria-hidden>🕒</span>
+        <Clock aria-hidden className="h-4 w-4 text-ink-500 dark:text-craft-200" />
         <span>최근 글</span>
       </h3>
       {posts.length === 0 ? (

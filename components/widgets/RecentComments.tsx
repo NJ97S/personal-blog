@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 function truncate(s: string, n: number) {
@@ -39,7 +40,7 @@ export default async function RecentComments() {
   return (
     <section className="craft-card p-4">
       <h3 className="font-serif font-bold text-sm mb-3 flex items-center gap-1.5">
-        <span aria-hidden>💬</span>
+        <MessageSquare aria-hidden className="h-4 w-4 text-ink-500 dark:text-craft-200" />
         <span>최근 댓글</span>
       </h3>
       {visible.length === 0 ? (
