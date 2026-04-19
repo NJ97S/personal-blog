@@ -8,7 +8,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <Header />
       <div
-        className="mx-auto w-full max-w-7xl flex-1 px-4 py-8
+        className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-8
                    grid gap-6
                    grid-cols-1
                    md:grid-cols-[220px_minmax(0,1fr)]
