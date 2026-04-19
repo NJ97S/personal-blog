@@ -11,8 +11,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-8
                    grid gap-6
                    grid-cols-1
-                   md:grid-cols-[220px_minmax(0,1fr)]
-                   lg:grid-cols-[220px_minmax(0,1fr)_260px]"
+                   md:grid-cols-[260px_minmax(0,1fr)]
+                   lg:grid-cols-[260px_minmax(0,1fr)_260px]"
       >
         <aside className="hidden md:block">
           <CategorySidebar />
