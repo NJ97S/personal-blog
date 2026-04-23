@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFormStatus } from 'react-dom'
 import { ArrowLeft } from 'lucide-react'
+import { toast } from 'sonner'
 import MarkdownEditor from '@/components/MarkdownEditor'
 import TitleInput from '@/components/TitleInput'
 import TagInput from '@/components/TagInput'
@@ -49,29 +50,43 @@ export default function EditPostForm({
   const [modalOpen, setModalOpen] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('editor-toast')
+      if (stored) {
+        toast.success(stored)
+        sessionStorage.removeItem('editor-toast')
+      }
+    } catch {}
+  }, [])
 
   const markDirty = useCallback(() => {
     setDirty(true)
-    setSuccessMsg(null)
   }, [])
 
   const handleAction = useCallback(
     async (formData: FormData) => {
       setErrorMsg(null)
-      setSuccessMsg(null)
       const result = await updatePost(post.id, { ok: false }, formData)
       if (!result.ok) {
         setErrorMsg(result.error ?? '저장에 실패했습니다.')
         return
+      }
+      if (result.toast && result.redirectTo) {
+        try {
+          sessionStorage.setItem('editor-toast', result.toast)
+        } catch {}
       }
       if (result.redirectTo) {
         router.replace(result.redirectTo)
         return
       }
       setDirty(false)
-      setSuccessMsg('저장되었습니다.')
+      if (result.toast) {
+        toast.success(result.toast)
+      }
     },
     [post.id, router],
   )
@@ -112,9 +127,6 @@ export default function EditPostForm({
             <div className="flex items-center gap-3">
               {errorMsg && (
                 <p className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>
-              )}
-              {successMsg && (
-                <p className="text-sm text-green-700 dark:text-green-400">{successMsg}</p>
               )}
               <DraftButton />
               <button

@@ -57,6 +57,11 @@ export default function NewPostForm({
         setErrorMsg(result.error ?? '저장에 실패했습니다.')
         return
       }
+      if (result.toast && result.redirectTo) {
+        try {
+          sessionStorage.setItem('editor-toast', result.toast)
+        } catch {}
+      }
       if (result.redirectTo) {
         router.replace(result.redirectTo)
       }

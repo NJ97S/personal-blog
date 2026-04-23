@@ -23,6 +23,7 @@ export type ActionState = {
   error?: string
   id?: string
   redirectTo?: string
+  toast?: string
 }
 
 export async function requireAdmin() {
@@ -142,6 +143,7 @@ export async function createPost(
     ok: true,
     id: data.id,
     redirectTo: input.published ? '/admin/posts' : `/admin/posts/${data.id}/edit`,
+    toast: input.published ? undefined : '임시저장 되었습니다.',
   }
 }
 
@@ -189,6 +191,7 @@ export async function updatePost(
     ok: true,
     id,
     redirectTo: input.published ? '/admin/posts' : undefined,
+    toast: input.published ? undefined : '임시저장 되었습니다.',
   }
 }
 
