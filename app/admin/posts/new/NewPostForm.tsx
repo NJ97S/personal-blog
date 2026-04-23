@@ -2,16 +2,14 @@
 
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useFormState, useFormStatus } from 'react-dom'
+import { useFormStatus } from 'react-dom'
 import { ArrowLeft } from 'lucide-react'
 import MarkdownEditor from '@/components/MarkdownEditor'
 import TitleInput from '@/components/TitleInput'
 import TagInput from '@/components/TagInput'
 import PostEditorShell from '@/components/PostEditorShell'
 import PublishModal from '@/components/PublishModal'
-import { createPost, type ActionState } from '@/app/actions/posts'
-
-const initialState: ActionState = { ok: false }
+import { createPost } from '@/app/actions/posts'
 
 function slugify(input: string) {
   return input
@@ -43,13 +41,28 @@ export default function NewPostForm({
 }: {
   categoryPicker: React.ReactNode
 }) {
-  const [state, formAction] = useFormState(createPost, initialState)
   const [title, setTitle] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [dirty, setDirty] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const router = useRouter()
 
   const markDirty = useCallback(() => setDirty(true), [])
+
+  const handleAction = useCallback(
+    async (formData: FormData) => {
+      setErrorMsg(null)
+      const result = await createPost({ ok: false }, formData)
+      if (!result.ok) {
+        setErrorMsg(result.error ?? '저장에 실패했습니다.')
+        return
+      }
+      if (result.redirectTo) {
+        router.replace(result.redirectTo)
+      }
+    },
+    [router],
+  )
 
   const onTitleBlur = () => {
     const slugEl = document.getElementById('slug') as HTMLInputElement | null
@@ -64,7 +77,7 @@ export default function NewPostForm({
   }
 
   return (
-    <form action={formAction} onChange={markDirty}>
+    <form action={handleAction} onChange={markDirty}>
       <PostEditorShell
         actions={
           <>
@@ -77,8 +90,8 @@ export default function NewPostForm({
               나가기
             </button>
             <div className="flex items-center gap-3">
-              {state.error && (
-                <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+              {errorMsg && (
+                <p className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>
               )}
               <DraftButton />
               <button

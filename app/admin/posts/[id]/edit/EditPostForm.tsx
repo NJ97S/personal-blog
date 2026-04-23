@@ -2,14 +2,14 @@
 
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useFormState, useFormStatus } from 'react-dom'
+import { useFormStatus } from 'react-dom'
 import { ArrowLeft } from 'lucide-react'
 import MarkdownEditor from '@/components/MarkdownEditor'
 import TitleInput from '@/components/TitleInput'
 import TagInput from '@/components/TagInput'
 import PostEditorShell from '@/components/PostEditorShell'
 import PublishModal from '@/components/PublishModal'
-import { updatePost, deletePost, type ActionState } from '@/app/actions/posts'
+import { updatePost, deletePost } from '@/app/actions/posts'
 
 type PostDraft = {
   id: string
@@ -22,8 +22,6 @@ type PostDraft = {
   coverImage: string
   categoryId: string | null
 }
-
-const initialState: ActionState = { ok: false }
 
 function DraftButton() {
   const { pending } = useFormStatus()
@@ -47,14 +45,36 @@ export default function EditPostForm({
   post: PostDraft
   categoryPicker: React.ReactNode
 }) {
-  const update = updatePost.bind(null, post.id)
-  const [state, formAction] = useFormState(update, initialState)
   const [title, setTitle] = useState(post.title)
   const [modalOpen, setModalOpen] = useState(false)
   const [dirty, setDirty] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const router = useRouter()
 
-  const markDirty = useCallback(() => setDirty(true), [])
+  const markDirty = useCallback(() => {
+    setDirty(true)
+    setSuccessMsg(null)
+  }, [])
+
+  const handleAction = useCallback(
+    async (formData: FormData) => {
+      setErrorMsg(null)
+      setSuccessMsg(null)
+      const result = await updatePost(post.id, { ok: false }, formData)
+      if (!result.ok) {
+        setErrorMsg(result.error ?? '저장에 실패했습니다.')
+        return
+      }
+      if (result.redirectTo) {
+        router.replace(result.redirectTo)
+        return
+      }
+      setDirty(false)
+      setSuccessMsg('저장되었습니다.')
+    },
+    [post.id, router],
+  )
 
   const onExit = () => {
     if (dirty && !confirm('저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?')) return
@@ -77,7 +97,7 @@ export default function EditPostForm({
   )
 
   return (
-    <form action={formAction} onChange={markDirty}>
+    <form action={handleAction} onChange={markDirty}>
       <PostEditorShell
         actions={
           <>
@@ -90,11 +110,11 @@ export default function EditPostForm({
               나가기
             </button>
             <div className="flex items-center gap-3">
-              {state.error && (
-                <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+              {errorMsg && (
+                <p className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>
               )}
-              {state.ok && (
-                <p className="text-sm text-green-700 dark:text-green-400">저장되었습니다.</p>
+              {successMsg && (
+                <p className="text-sm text-green-700 dark:text-green-400">{successMsg}</p>
               )}
               <DraftButton />
               <button

@@ -18,7 +18,12 @@ export type PostInput = {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export type ActionState = { ok: boolean; error?: string; id?: string }
+export type ActionState = {
+  ok: boolean
+  error?: string
+  id?: string
+  redirectTo?: string
+}
 
 export async function requireAdmin() {
   const supabase = createClient()
@@ -133,7 +138,11 @@ export async function createPost(
   }
 
   revalidateAll(data.slug)
-  redirect(input.published ? '/admin/posts' : `/admin/posts/${data.id}/edit`)
+  return {
+    ok: true,
+    id: data.id,
+    redirectTo: input.published ? '/admin/posts' : `/admin/posts/${data.id}/edit`,
+  }
 }
 
 export async function updatePost(
@@ -176,8 +185,11 @@ export async function updatePost(
   }
 
   revalidateAll(input.slug, oldSlug ?? '')
-  if (input.published) redirect('/admin/posts')
-  return { ok: true }
+  return {
+    ok: true,
+    id,
+    redirectTo: input.published ? '/admin/posts' : undefined,
+  }
 }
 
 export async function deletePost(id: string, slug: string): Promise<ActionState> {
