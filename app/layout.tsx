@@ -37,6 +37,7 @@ export const metadata: Metadata = {
       'application/rss+xml': [{ url: '/rss.xml', title: `${site.name} RSS` }],
     },
   },
+  manifest: '/manifest.webmanifest',
   openGraph: {
     type: 'website',
     siteName: site.name,
