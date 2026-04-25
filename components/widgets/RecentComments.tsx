@@ -6,7 +6,7 @@ function truncate(s: string, n: number) {
   return s.length > n ? s.slice(0, n) + '…' : s
 }
 
-type RelatedPost = { slug: string; title: string; published: boolean }
+type RelatedPost = { slug: string; title: string; visibility: string }
 type CommentRow = {
   id: string
   author_name: string
@@ -25,16 +25,16 @@ export default async function RecentComments() {
   const { data } = await supabase
     .from('comments')
     .select(
-      'id, author_name, content, created_at, post:posts!inner(slug, title, published)',
+      'id, author_name, content, created_at, post:posts!inner(slug, title, visibility)',
     )
-    .eq('post.published', true)
+    .eq('post.visibility', 'public')
     .order('created_at', { ascending: false })
     .limit(10)
 
   const rows: CommentRow[] = (data ?? []) as unknown as CommentRow[]
   const visible = rows
     .map((c) => ({ ...c, post: firstPost(c.post) }))
-    .filter((c): c is CommentRow & { post: RelatedPost } => !!c.post?.published)
+    .filter((c): c is CommentRow & { post: RelatedPost } => c.post?.visibility === 'public')
     .slice(0, 5)
 
   return (

@@ -61,7 +61,7 @@ export async function createComment(
     .from('posts')
     .select('id, slug')
     .eq('id', postId)
-    .eq('published', true)
+    .eq('visibility', 'public')
     .single()
   if (!post || post.slug !== postSlug) {
     return { ok: false, error: '댓글을 작성할 수 없는 글입니다.' }

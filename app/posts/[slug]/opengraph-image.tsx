@@ -11,7 +11,7 @@ export default async function OgImage({ params }: { params: { slug: string } }) 
     .from('posts')
     .select('title, created_at')
     .eq('slug', params.slug)
-    .eq('published', true)
+    .eq('visibility', 'public')
     .single()
 
   const title = post?.title ?? 'ShyLog'

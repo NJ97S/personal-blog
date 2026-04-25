@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: posts } = await supabase
     .from('posts')
     .select('slug, updated_at, category_id')
-    .eq('published', true)
+    .eq('visibility', 'public')
 
   const allPosts = posts ?? []
 

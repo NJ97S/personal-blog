@@ -37,7 +37,6 @@ export default async function SearchPage({
     slug: string
     excerpt: string | null
     tags: string[] | null
-    published: boolean
     created_at: string
     cover_image: string | null
   }> = []
@@ -46,8 +45,8 @@ export default async function SearchPage({
     const supabase = createClient()
     const { data } = await supabase
       .from('posts')
-      .select('id, title, slug, excerpt, tags, published, created_at, cover_image')
-      .eq('published', true)
+      .select('id, title, slug, excerpt, tags, created_at, cover_image')
+      .eq('visibility', 'public')
       .or(`title.ilike.%${q}%,excerpt.ilike.%${q}%,content.ilike.%${q}%`)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -78,7 +77,6 @@ export default async function SearchPage({
             slug={p.slug}
             excerpt={p.excerpt}
             tags={p.tags ?? []}
-            published={p.published}
             created_at={p.created_at}
             coverImage={p.cover_image}
           />

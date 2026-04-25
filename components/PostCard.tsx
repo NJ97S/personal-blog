@@ -7,7 +7,6 @@ export type PostCardProps = {
   slug: string
   excerpt: string | null
   tags: string[]
-  published: boolean
   created_at: string
   coverImage?: string | null
   category?: { name: string; path: string[] } | null
@@ -31,7 +30,6 @@ export default function PostCard({
   slug,
   excerpt,
   tags,
-  published,
   created_at,
   coverImage,
   category,
@@ -66,21 +64,16 @@ export default function PostCard({
         </Link>
 
         <div className="flex-1 min-w-0 p-4 sm:py-4 sm:pr-4 sm:pl-0">
-          <div className="mb-1 flex items-center gap-2 text-xs">
-            {categoryHref && category && (
+          {categoryHref && category && (
+            <div className="mb-1 flex items-center gap-2 text-xs">
               <Link
                 href={categoryHref}
                 className="font-mono text-craft-400 hover:text-ink-900 dark:hover:text-craft-50"
               >
                 {category.name}
               </Link>
-            )}
-            {!published && (
-              <span className="text-ink-400 border border-craft-200 dark:border-ink-600 px-2 py-0.5 rounded-sm">
-                draft
-              </span>
-            )}
-          </div>
+            </div>
+          )}
 
           <Link href={`/posts/${slug}`} className="block">
             <h2 className="text-lg sm:text-xl font-bold font-serif line-clamp-2 mb-1 hover:text-craft-400">

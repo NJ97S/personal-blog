@@ -18,7 +18,7 @@ export async function GET() {
   const { data: posts } = await supabase
     .from('posts')
     .select('slug, title, excerpt, created_at')
-    .eq('published', true)
+    .eq('visibility', 'public')
     .order('created_at', { ascending: false })
     .limit(20)
 

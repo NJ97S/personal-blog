@@ -66,9 +66,9 @@ export default async function CategoryPage({
   let query = supabase
     .from('posts')
     .select(
-      'id, title, slug, excerpt, tags, published, created_at, cover_image, category_id',
+      'id, title, slug, excerpt, tags, created_at, cover_image, category_id',
     )
-    .eq('published', true)
+    .eq('visibility', 'public')
     .in('category_id', ids)
     .order('created_at', { ascending: false })
     .limit(PAGE_SIZE + 1)
@@ -146,7 +146,6 @@ export default async function CategoryPage({
               slug={p.slug}
               excerpt={p.excerpt}
               tags={p.tags ?? []}
-              published={p.published}
               created_at={p.created_at}
               coverImage={p.cover_image}
               category={cat ? { name: cat.name, path: cat.path } : null}

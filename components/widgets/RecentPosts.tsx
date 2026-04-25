@@ -18,7 +18,7 @@ export default async function RecentPosts() {
   const { data } = await supabase
     .from('posts')
     .select('id, title, slug, created_at')
-    .eq('published', true)
+    .eq('visibility', 'public')
     .order('created_at', { ascending: false })
     .limit(5)
 

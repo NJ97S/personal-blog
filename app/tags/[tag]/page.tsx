@@ -35,9 +35,9 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
     supabase
       .from('posts')
       .select(
-        'id, title, slug, excerpt, tags, published, created_at, cover_image, category_id',
+        'id, title, slug, excerpt, tags, created_at, cover_image, category_id',
       )
-      .eq('published', true)
+      .eq('visibility', 'public')
       .contains('tags', [tag])
       .order('created_at', { ascending: false }),
     fetchCategoryTree(),
@@ -66,7 +66,6 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
               slug={post.slug}
               excerpt={post.excerpt}
               tags={post.tags ?? []}
-              published={post.published}
               created_at={post.created_at}
               coverImage={post.cover_image}
               category={cat ? { name: cat.name, path: cat.path } : null}
