@@ -17,8 +17,8 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { site } from '@/lib/site'
 
+export const dynamic = 'force-dynamic'
 export const dynamicParams = true
-export const revalidate = 60
 
 const sanitizeSchema = {
   ...defaultSchema,
@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     .from('posts')
     .select('title, excerpt, tags, cover_image, created_at, updated_at')
     .eq('slug', slug)
-    .eq('published', true)
+    .eq('visibility', 'public')
     .maybeSingle()
 
   if (!post) return { title: '글을 찾을 수 없습니다' }
@@ -113,15 +113,29 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const supabase = createClient()
   const slug = decodeSlug(params.slug)
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  let isAdmin = false
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+    isAdmin = !!profile?.is_admin
+  }
+
+  let postQuery = supabase
+    .from('posts')
+    .select(
+      'id, title, slug, content, excerpt, tags, visibility, cover_image, created_at, updated_at, category_id',
+    )
+    .eq('slug', slug)
+  if (!isAdmin) postQuery = postQuery.eq('visibility', 'public')
+
   const [{ data: post }, tree] = await Promise.all([
-    supabase
-      .from('posts')
-      .select(
-        'id, title, slug, content, excerpt, tags, published, cover_image, created_at, updated_at, category_id',
-      )
-      .eq('slug', slug)
-      .eq('published', true)
-      .maybeSingle(),
+    postQuery.maybeSingle(),
     fetchCategoryTree(),
   ])
 
@@ -145,7 +159,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
       .from('posts')
       .select('id, slug, title, created_at')
       .eq('category_id', post.category_id)
-      .eq('published', true)
+      .eq('visibility', 'public')
       .order('created_at', { ascending: true })
     seriesPosts = (data ?? []).map((p) => ({
       id: p.id,
@@ -247,6 +261,11 @@ export default async function PostPage({ params }: { params: { slug: string } })
               <span className="text-ink-900 dark:text-craft-50 font-bold">Soshy</span>
               <span className="mx-1.5">·</span>
               <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
+              {post.visibility !== 'public' && (
+                <span className="ml-2 inline-block text-xs border border-craft-200 dark:border-ink-600 px-2 py-0.5 rounded-sm">
+                  {post.visibility === 'private' ? '비공개 · 관리자만 표시' : '초안 · 관리자만 표시'}
+                </span>
+              )}
             </p>
             <ShareButton />
           </div>
