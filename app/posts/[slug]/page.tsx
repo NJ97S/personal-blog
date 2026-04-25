@@ -3,6 +3,7 @@ import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
+import rehypeRaw from 'rehype-raw'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeSlug from 'rehype-slug'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
@@ -298,6 +299,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
           <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkBreaks]}
             rehypePlugins={[
+              rehypeRaw,
               rehypeSlug,
               rehypeHighlight,
               [rehypeSanitize, sanitizeSchema],
