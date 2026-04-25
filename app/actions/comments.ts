@@ -2,7 +2,6 @@
 
 import crypto from 'node:crypto'
 import { headers } from 'next/headers'
-import { revalidatePath } from 'next/cache'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { createClient } from '@/lib/supabase/server'
@@ -42,11 +41,21 @@ function stripUnsafe(s: string): string {
   return out
 }
 
+export type PublicComment = {
+  id: string
+  author_name: string
+  content: string
+  created_at: string
+}
+
 export type CreateCommentState = {
   ok: boolean
   error?: string
   commentId?: string
   editToken?: string
+  comment?: PublicComment
+  /** 동일 state 객체로도 useEffect 가 재발화하도록 매 호출마다 변경되는 nonce */
+  nonce?: number
 }
 
 export async function createComment(
@@ -121,8 +130,18 @@ export async function createComment(
   ].join('\n')
   await sendTelegram(msg)
 
-  revalidatePath(`/posts/${postSlug}`)
-  return { ok: true, commentId: commentId as string, editToken }
+  return {
+    ok: true,
+    commentId: commentId as string,
+    editToken,
+    comment: {
+      id: commentId as string,
+      author_name: safeName,
+      content: safeContent,
+      created_at: new Date().toISOString(),
+    },
+    nonce: Date.now(),
+  }
 }
 
 export type MutateCommentResult = { ok: boolean; error?: string }
@@ -177,7 +196,6 @@ export async function updateComment(
   }
   if (!data) return { ok: false, error: '비밀번호가 일치하지 않습니다.' }
 
-  revalidatePath(`/posts/${postSlug}`)
   return { ok: true }
 }
 
@@ -201,6 +219,5 @@ export async function deleteComment(args: MutateArgs): Promise<MutateCommentResu
   }
   if (!data) return { ok: false, error: '비밀번호가 일치하지 않습니다.' }
 
-  revalidatePath(`/posts/${postSlug}`)
   return { ok: true }
 }

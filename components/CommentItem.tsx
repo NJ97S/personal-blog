@@ -26,9 +26,13 @@ function formatDate(iso: string) {
 export default function CommentItem({
   comment,
   postSlug,
+  onUpdated,
+  onDeleted,
 }: {
   comment: Comment
   postSlug: string
+  onUpdated?: (id: string, newContent: string) => void
+  onDeleted?: (id: string) => void
 }) {
   const [mode, setMode] = useState<Mode>('view')
   const [editContent, setEditContent] = useState(comment.content)
@@ -84,8 +88,12 @@ export default function CommentItem({
       setError(res.error ?? '수정에 실패했습니다.')
       return
     }
+    onUpdated?.(comment.id, trimmed)
     toast.success('댓글이 수정되었습니다.')
-    reset()
+    setMode('view')
+    setPassword('')
+    setError(null)
+    setEditContent(trimmed)
   }
 
   const onConfirmDelete = async () => {
@@ -105,7 +113,7 @@ export default function CommentItem({
     }
     removeToken(comment.id)
     toast.success('댓글이 삭제되었습니다.')
-    // revalidatePath 가 서버에서 호출되어 댓글이 화면에서 사라짐
+    onDeleted?.(comment.id)
   }
 
   return (

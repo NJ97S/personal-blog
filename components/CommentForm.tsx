@@ -7,6 +7,7 @@ import { createComment, type CreateCommentState } from '@/app/actions/comments'
 import { saveToken } from '@/lib/comment-tokens'
 import { useHydrated } from '@/lib/use-hydrated'
 import PasswordInput from './PasswordInput'
+import type { CommentRow } from './CommentList'
 
 const initialState: CreateCommentState = { ok: false }
 
@@ -27,23 +28,28 @@ function SubmitButton({ ready }: { ready: boolean }) {
 export default function CommentForm({
   postId,
   postSlug,
+  onCreated,
 }: {
   postId: string
   postSlug: string
+  onCreated?: (c: CommentRow) => void
 }) {
   const [state, formAction] = useFormState(createComment, initialState)
   const formRef = useRef<HTMLFormElement>(null)
   const hydrated = useHydrated()
 
   useEffect(() => {
-    if (state.ok) {
-      if (state.commentId && state.editToken) {
-        saveToken(state.commentId, state.editToken)
-      }
-      formRef.current?.reset()
-      toast.success('댓글이 등록되었습니다.')
+    if (!state.ok || !state.nonce) return
+    if (state.commentId && state.editToken) {
+      saveToken(state.commentId, state.editToken)
     }
-  }, [state])
+    if (state.comment && onCreated) {
+      onCreated(state.comment)
+    }
+    formRef.current?.reset()
+    toast.success('댓글이 등록되었습니다.')
+    // nonce 가 매 호출마다 변경되므로 같은 객체 ref 라도 effect 재발화
+  }, [state.nonce, state.ok, state.commentId, state.editToken, state.comment, onCreated])
 
   return (
     <form ref={formRef} action={formAction} className="craft-card p-4 space-y-3">
