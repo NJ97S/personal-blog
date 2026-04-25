@@ -144,7 +144,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
   if (!post) notFound()
 
   if (!isAdmin && post.visibility === 'public') {
-    trackView(post.id).catch(() => {})
+    await trackView(post.id)
   }
 
   const flatNodes = walkTree(tree)

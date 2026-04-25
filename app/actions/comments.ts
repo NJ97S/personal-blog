@@ -84,7 +84,9 @@ export async function createComment(
     `<b>${escapeHtml(safeName)}</b>: ${escapeHtml(preview)}`,
     `<a href="${escapeHtml(url)}">글로 이동</a>`,
   ].join('\n')
-  sendTelegram(msg).catch(() => {})
+  // sendTelegram 자체가 try/catch + boolean 반환이므로 throw 안 함.
+  // 다만 fire-and-forget(await 없이) 두면 서버리스 함수가 응답 후 즉시 종료되어 fetch가 끊긴다.
+  await sendTelegram(msg)
 
   revalidatePath(`/posts/${postSlug}`)
   return { ok: true }
