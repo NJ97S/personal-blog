@@ -5,16 +5,18 @@ import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { createComment, type CreateCommentState } from '@/app/actions/comments'
 import { saveToken } from '@/lib/comment-tokens'
+import { useHydrated } from '@/lib/use-hydrated'
 import PasswordInput from './PasswordInput'
 
 const initialState: CreateCommentState = { ok: false }
 
-function SubmitButton() {
+function SubmitButton({ ready }: { ready: boolean }) {
   const { pending } = useFormStatus()
+  const disabled = !ready || pending
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={disabled}
       className="craft-card px-4 py-2 text-sm bg-craft-100 dark:bg-ink-800 hover:bg-craft-200 dark:hover:bg-ink-600 disabled:opacity-50"
     >
       {pending ? '등록 중…' : '댓글 남기기'}
@@ -31,6 +33,7 @@ export default function CommentForm({
 }) {
   const [state, formAction] = useFormState(createComment, initialState)
   const formRef = useRef<HTMLFormElement>(null)
+  const hydrated = useHydrated()
 
   useEffect(() => {
     if (state.ok) {
@@ -93,7 +96,7 @@ export default function CommentForm({
       {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
 
       <div className="flex justify-end">
-        <SubmitButton />
+        <SubmitButton ready={hydrated} />
       </div>
     </form>
   )

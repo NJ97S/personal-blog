@@ -10,6 +10,7 @@ import TagInput from '@/components/TagInput'
 import PostEditorShell from '@/components/PostEditorShell'
 import PublishModal from '@/components/PublishModal'
 import { createPost } from '@/app/actions/posts'
+import { useHydrated } from '@/lib/use-hydrated'
 
 function slugify(input: string) {
   return input
@@ -21,14 +22,15 @@ function slugify(input: string) {
     .replace(/^-|-$/g, '')
 }
 
-function DraftButton() {
+function DraftButton({ ready }: { ready: boolean }) {
   const { pending } = useFormStatus()
+  const disabled = !ready || pending
   return (
     <button
       type="submit"
       name="visibility"
       value="draft"
-      disabled={pending}
+      disabled={disabled}
       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-ink-600 dark:text-craft-100 hover:text-ink-900 dark:hover:text-craft-50 disabled:opacity-50"
     >
       {pending ? '저장 중…' : '임시저장'}
@@ -46,6 +48,7 @@ export default function NewPostForm({
   const [dirty, setDirty] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const router = useRouter()
+  const hydrated = useHydrated()
 
   const markDirty = useCallback(() => setDirty(true), [])
 
@@ -98,7 +101,7 @@ export default function NewPostForm({
               {errorMsg && (
                 <p className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>
               )}
-              <DraftButton />
+              <DraftButton ready={hydrated} />
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
