@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { deleteComment, updateComment } from '@/app/actions/comments'
 import { getToken, removeToken } from '@/lib/comment-tokens'
 import PasswordInput from './PasswordInput'
@@ -83,6 +84,7 @@ export default function CommentItem({
       setError(res.error ?? '수정에 실패했습니다.')
       return
     }
+    toast.success('댓글이 수정되었습니다.')
     reset()
   }
 
@@ -102,6 +104,7 @@ export default function CommentItem({
       return
     }
     removeToken(comment.id)
+    toast.success('댓글이 삭제되었습니다.')
     // revalidatePath 가 서버에서 호출되어 댓글이 화면에서 사라짐
   }
 

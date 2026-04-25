@@ -2,6 +2,7 @@
 
 import { useFormState, useFormStatus } from 'react-dom'
 import { useEffect, useRef } from 'react'
+import { toast } from 'sonner'
 import { createComment, type CreateCommentState } from '@/app/actions/comments'
 import { saveToken } from '@/lib/comment-tokens'
 import PasswordInput from './PasswordInput'
@@ -37,6 +38,7 @@ export default function CommentForm({
         saveToken(state.commentId, state.editToken)
       }
       formRef.current?.reset()
+      toast.success('댓글이 등록되었습니다.')
     }
   }, [state])
 
@@ -89,7 +91,6 @@ export default function CommentForm({
       </div>
 
       {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
-      {state.ok && <p className="text-sm text-green-700 dark:text-green-400">댓글이 등록되었습니다.</p>}
 
       <div className="flex justify-end">
         <SubmitButton />
