@@ -1,5 +1,6 @@
 'use server'
 
+import crypto from 'node:crypto'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { Ratelimit } from '@upstash/ratelimit'
@@ -22,14 +23,41 @@ function getRatelimit() {
   }
 }
 
+function getIp(): string {
+  const xff = headers().get('x-forwarded-for') ?? ''
+  return (xff.split(',')[0] || headers().get('x-real-ip') || 'anonymous').trim()
+}
+
+// 컨트롤 문자(0x00-0x1F, 0x7F) 와 일부 Unicode 포맷(zero-width, BOM, RTL/LTR override) 제거.
+// 정규식에 literal 컨트롤 문자를 박으면 git 이 binary 로 오인하므로 charCode 비교 방식 사용.
+function stripUnsafe(s: string): string {
+  let out = ''
+  for (let i = 0; i < s.length; i += 1) {
+    const code = s.charCodeAt(i)
+    const isControl = code <= 0x1f || code === 0x7f
+    const isFormat =
+      (code >= 0x200b && code <= 0x200f) || (code >= 0x202a && code <= 0x202e)
+    if (!isControl && !isFormat) out += s[i]
+  }
+  return out
+}
+
+export type CreateCommentState = {
+  ok: boolean
+  error?: string
+  commentId?: string
+  editToken?: string
+}
+
 export async function createComment(
-  _prevState: { ok: boolean; error?: string },
+  _prevState: CreateCommentState,
   formData: FormData,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<CreateCommentState> {
   const postId = (formData.get('postId') as string | null) ?? ''
   const postSlug = (formData.get('postSlug') as string | null) ?? ''
   const authorName = ((formData.get('authorName') as string | null) ?? '').trim().slice(0, 50)
   const content = ((formData.get('content') as string | null) ?? '').trim().slice(0, 500)
+  const password = ((formData.get('password') as string | null) ?? '').trim()
 
   if (!postId || !postSlug) {
     return { ok: false, error: '잘못된 요청입니다.' }
@@ -37,12 +65,13 @@ export async function createComment(
   if (!authorName || !content) {
     return { ok: false, error: '이름과 내용을 입력해주세요.' }
   }
+  if (password.length < 4 || password.length > 20) {
+    return { ok: false, error: '비밀번호는 4~20자로 입력해주세요.' }
+  }
 
   const limiter = getRatelimit()
   if (limiter) {
-    const xff = headers().get('x-forwarded-for') ?? ''
-    const ip = (xff.split(',')[0] || headers().get('x-real-ip') || 'anonymous').trim()
-    const { success } = await limiter.limit(ip)
+    const { success } = await limiter.limit(`comment-create:${getIp()}`)
     if (!success) {
       return {
         ok: false,
@@ -53,12 +82,12 @@ export async function createComment(
     return { ok: false, error: '댓글 시스템 설정이 올바르지 않습니다.' }
   }
 
-  const stripUnsafe = (s: string) =>
-    s.replace(/[\u0000-\u001F\u007F\u200B-\u200F\u202A-\u202E]/g, '')
   const safeName = stripUnsafe(authorName)
   const safeContent = stripUnsafe(content)
+  const editToken = crypto.randomBytes(32).toString('hex')
 
   const supabase = createClient()
+
   const { data: post } = await supabase
     .from('posts')
     .select('id, slug, title')
@@ -69,11 +98,17 @@ export async function createComment(
     return { ok: false, error: '댓글을 작성할 수 없는 글입니다.' }
   }
 
-  const { error } = await supabase
-    .from('comments')
-    .insert({ post_id: postId, author_name: safeName, content: safeContent })
-
-  if (error) return { ok: false, error: '댓글 저장에 실패했습니다.' }
+  const { data: commentId, error } = await supabase.rpc('insert_comment', {
+    p_post_id: postId,
+    p_author_name: safeName,
+    p_content: safeContent,
+    p_password: password,
+    p_edit_token: editToken,
+  })
+  if (error || !commentId) {
+    console.warn('[createComment] insert_comment failed', error)
+    return { ok: false, error: '댓글 저장에 실패했습니다.' }
+  }
 
   const previewLen = 120
   const preview =
@@ -84,9 +119,87 @@ export async function createComment(
     `<b>${escapeHtml(safeName)}</b>: ${escapeHtml(preview)}`,
     `<a href="${escapeHtml(url)}">글로 이동</a>`,
   ].join('\n')
-  // sendTelegram 자체가 try/catch + boolean 반환이므로 throw 안 함.
-  // 다만 fire-and-forget(await 없이) 두면 서버리스 함수가 응답 후 즉시 종료되어 fetch가 끊긴다.
   await sendTelegram(msg)
+
+  revalidatePath(`/posts/${postSlug}`)
+  return { ok: true, commentId: commentId as string, editToken }
+}
+
+export type MutateCommentResult = { ok: boolean; error?: string }
+
+type MutateArgs = {
+  commentId: string
+  postSlug: string
+  editToken?: string | null
+  password?: string | null
+}
+
+async function checkMutateRatelimit(): Promise<MutateCommentResult | null> {
+  const limiter = getRatelimit()
+  if (limiter) {
+    const { success } = await limiter.limit(`comment-mutate:${getIp()}`)
+    if (!success) {
+      return {
+        ok: false,
+        error: '요청이 너무 잦습니다. 잠시 후 다시 시도해주세요.',
+      }
+    }
+    return null
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return { ok: false, error: '댓글 시스템 설정이 올바르지 않습니다.' }
+  }
+  return null
+}
+
+export async function updateComment(
+  args: MutateArgs & { newContent: string },
+): Promise<MutateCommentResult> {
+  const { commentId, postSlug, editToken, password } = args
+  const newContent = (args.newContent ?? '').trim().slice(0, 500)
+  if (!commentId || !postSlug) return { ok: false, error: '잘못된 요청입니다.' }
+  if (!newContent) return { ok: false, error: '내용을 입력해주세요.' }
+  if (!editToken && !password) return { ok: false, error: '비밀번호를 입력해주세요.' }
+
+  const blocked = await checkMutateRatelimit()
+  if (blocked) return blocked
+
+  const supabase = createClient()
+  const { data, error } = await supabase.rpc('update_comment', {
+    p_comment_id: commentId,
+    p_new_content: stripUnsafe(newContent),
+    p_edit_token: editToken ?? null,
+    p_password: password ?? null,
+  })
+  if (error) {
+    console.warn('[updateComment] rpc failed', error)
+    return { ok: false, error: '댓글 수정에 실패했습니다.' }
+  }
+  if (!data) return { ok: false, error: '비밀번호가 일치하지 않습니다.' }
+
+  revalidatePath(`/posts/${postSlug}`)
+  return { ok: true }
+}
+
+export async function deleteComment(args: MutateArgs): Promise<MutateCommentResult> {
+  const { commentId, postSlug, editToken, password } = args
+  if (!commentId || !postSlug) return { ok: false, error: '잘못된 요청입니다.' }
+  if (!editToken && !password) return { ok: false, error: '비밀번호를 입력해주세요.' }
+
+  const blocked = await checkMutateRatelimit()
+  if (blocked) return blocked
+
+  const supabase = createClient()
+  const { data, error } = await supabase.rpc('delete_comment', {
+    p_comment_id: commentId,
+    p_edit_token: editToken ?? null,
+    p_password: password ?? null,
+  })
+  if (error) {
+    console.warn('[deleteComment] rpc failed', error)
+    return { ok: false, error: '댓글 삭제에 실패했습니다.' }
+  }
+  if (!data) return { ok: false, error: '비밀번호가 일치하지 않습니다.' }
 
   revalidatePath(`/posts/${postSlug}`)
   return { ok: true }

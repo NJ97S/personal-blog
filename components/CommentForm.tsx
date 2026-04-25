@@ -2,10 +2,10 @@
 
 import { useFormState, useFormStatus } from 'react-dom'
 import { useEffect, useRef } from 'react'
-import { createComment } from '@/app/actions/comments'
+import { createComment, type CreateCommentState } from '@/app/actions/comments'
+import { saveToken } from '@/lib/comment-tokens'
 
-type State = { ok: boolean; error?: string }
-const initialState: State = { ok: false }
+const initialState: CreateCommentState = { ok: false }
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -31,7 +31,12 @@ export default function CommentForm({
   const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
-    if (state.ok) formRef.current?.reset()
+    if (state.ok) {
+      if (state.commentId && state.editToken) {
+        saveToken(state.commentId, state.editToken)
+      }
+      formRef.current?.reset()
+    }
   }, [state])
 
   return (
@@ -39,18 +44,34 @@ export default function CommentForm({
       <input type="hidden" name="postId" value={postId} />
       <input type="hidden" name="postSlug" value={postSlug} />
 
-      <div>
-        <label htmlFor="authorName" className="block text-sm mb-1">
-          이름
-        </label>
-        <input
-          id="authorName"
-          name="authorName"
-          type="text"
-          required
-          maxLength={50}
-          className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-craft-400"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="authorName" className="block text-sm mb-1">
+            이름
+          </label>
+          <input
+            id="authorName"
+            name="authorName"
+            type="text"
+            required
+            maxLength={50}
+            className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-craft-400"
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="block text-sm mb-1">
+            비밀번호 <span className="text-xs text-ink-400">(수정·삭제 시 사용, 4~20자)</span>
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={4}
+            maxLength={20}
+            className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-craft-400"
+          />
+        </div>
       </div>
 
       <div>

@@ -1,13 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import CommentForm from './CommentForm'
-
-function formatDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleString('ko-KR')
-  } catch {
-    return iso
-  }
-}
+import CommentItem from './CommentItem'
 
 type Comment = {
   id: string
@@ -25,7 +18,7 @@ export default async function Comments({
 }) {
   const supabase = createClient()
   const { data: comments } = await supabase
-    .from('comments')
+    .from('public_comments')
     .select('id, author_name, content, created_at')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
@@ -42,13 +35,7 @@ export default async function Comments({
           <li className="text-sm text-ink-400">아직 댓글이 없습니다.</li>
         )}
         {items.map((c) => (
-          <li key={c.id} className="craft-card p-4">
-            <div className="flex items-baseline justify-between gap-3 mb-2">
-              <strong className="text-sm font-serif">{c.author_name}</strong>
-              <span className="text-xs text-ink-400">{formatDate(c.created_at)}</span>
-            </div>
-            <p className="text-sm whitespace-pre-wrap break-words">{c.content}</p>
-          </li>
+          <CommentItem key={c.id} comment={c} postSlug={postSlug} />
         ))}
       </ul>
 
