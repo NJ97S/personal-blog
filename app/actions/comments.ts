@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { createClient } from '@/lib/supabase/server'
+import { sendTelegram, escapeHtml } from '@/lib/telegram'
+import { site } from '@/lib/site'
 
 let ratelimit: Ratelimit | null = null
 function getRatelimit() {
@@ -59,7 +61,7 @@ export async function createComment(
   const supabase = createClient()
   const { data: post } = await supabase
     .from('posts')
-    .select('id, slug')
+    .select('id, slug, title')
     .eq('id', postId)
     .eq('visibility', 'public')
     .single()
@@ -72,6 +74,17 @@ export async function createComment(
     .insert({ post_id: postId, author_name: safeName, content: safeContent })
 
   if (error) return { ok: false, error: '댓글 저장에 실패했습니다.' }
+
+  const previewLen = 120
+  const preview =
+    safeContent.length > previewLen ? safeContent.slice(0, previewLen) + '…' : safeContent
+  const url = `${site.url}/posts/${encodeURI(postSlug)}`
+  const msg = [
+    `💬 <b>새 댓글</b> — ${escapeHtml(post.title)}`,
+    `<b>${escapeHtml(safeName)}</b>: ${escapeHtml(preview)}`,
+    `<a href="${escapeHtml(url)}">글로 이동</a>`,
+  ].join('\n')
+  sendTelegram(msg).catch(() => {})
 
   revalidatePath(`/posts/${postSlug}`)
   return { ok: true }

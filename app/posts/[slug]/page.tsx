@@ -17,6 +17,7 @@ import JsonLd from '@/components/JsonLd'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { site } from '@/lib/site'
+import { trackView } from '@/app/actions/views'
 
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
@@ -141,6 +142,10 @@ export default async function PostPage({ params }: { params: { slug: string } })
   ])
 
   if (!post) notFound()
+
+  if (!isAdmin && post.visibility === 'public') {
+    trackView(post.id).catch(() => {})
+  }
 
   const flatNodes = walkTree(tree)
   const categoryNode = post.category_id
