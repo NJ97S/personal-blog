@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import CategoryPicker from '@/components/CategoryPicker'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree } from '@/lib/categories'
+import type { PostVisibility } from '@/app/actions/posts'
 import EditPostForm from './EditPostForm'
 
 export const dynamic = 'force-dynamic'
@@ -12,7 +13,7 @@ export default async function EditPostPage({ params }: { params: { id: string } 
     supabase
       .from('posts')
       .select(
-        'id, title, slug, content, excerpt, tags, published, cover_image, category_id',
+        'id, title, slug, content, excerpt, tags, visibility, cover_image, category_id',
       )
       .eq('id', params.id)
       .single(),
@@ -30,7 +31,7 @@ export default async function EditPostPage({ params }: { params: { id: string } 
         content: post.content,
         excerpt: post.excerpt ?? '',
         tags: post.tags ?? [],
-        published: post.published,
+        visibility: (post.visibility ?? 'draft') as PostVisibility,
         coverImage: post.cover_image ?? '',
         categoryId: post.category_id ?? null,
       }}

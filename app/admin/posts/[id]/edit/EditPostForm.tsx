@@ -10,7 +10,7 @@ import TitleInput from '@/components/TitleInput'
 import TagInput from '@/components/TagInput'
 import PostEditorShell from '@/components/PostEditorShell'
 import PublishModal from '@/components/PublishModal'
-import { updatePost, deletePost } from '@/app/actions/posts'
+import { updatePost, deletePost, type PostVisibility } from '@/app/actions/posts'
 
 type PostDraft = {
   id: string
@@ -19,7 +19,7 @@ type PostDraft = {
   content: string
   excerpt: string
   tags: string[]
-  published: boolean
+  visibility: PostVisibility
   coverImage: string
   categoryId: string | null
 }
@@ -29,8 +29,8 @@ function DraftButton() {
   return (
     <button
       type="submit"
-      name="published"
-      value="false"
+      name="visibility"
+      value="draft"
       disabled={pending}
       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-ink-600 dark:text-craft-100 hover:text-ink-900 dark:hover:text-craft-50 disabled:opacity-50"
     >
@@ -154,7 +154,7 @@ export default function EditPostForm({
         defaultSlug={post.slug}
         defaultExcerpt={post.excerpt}
         defaultCoverImage={post.coverImage}
-        defaultPublished={post.published}
+        defaultVisibility={post.visibility === 'private' ? 'private' : 'public'}
         categoryPicker={categoryPicker}
         dangerZone={dangerZone}
       />

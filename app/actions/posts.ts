@@ -4,19 +4,23 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
+export type PostVisibility = 'public' | 'private' | 'draft'
+
 export type PostInput = {
   title: string
   slug: string
   content: string
   excerpt: string | null
   tags: string[]
-  published: boolean
+  visibility: PostVisibility
   coverImage?: string | null
   categoryId: string | null
 }
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+const VISIBILITY_VALUES: PostVisibility[] = ['public', 'private', 'draft']
 
 export type ActionState = {
   ok: boolean
@@ -50,18 +54,26 @@ function isHttpsUrl(value: string): boolean {
   }
 }
 
+function parseVisibility(formData: FormData): PostVisibility {
+  const raw = (formData.get('visibility') as string | null)?.trim() ?? ''
+  if (VISIBILITY_VALUES.includes(raw as PostVisibility)) {
+    return raw as PostVisibility
+  }
+  return 'draft'
+}
+
 function parseFormData(formData: FormData): PostInput {
   const title = (formData.get('title') as string | null)?.trim() ?? ''
   let slug = (formData.get('slug') as string | null)?.trim() ?? ''
   const content = (formData.get('content') as string | null) ?? ''
   const excerptRaw = (formData.get('excerpt') as string | null)?.trim() ?? ''
   const tagsRaw = (formData.get('tags') as string | null)?.trim() ?? ''
-  const published = formData.get('published') === 'on' || formData.get('published') === 'true'
+  const visibility = parseVisibility(formData)
   const coverImage = ((formData.get('coverImage') as string | null)?.trim() ?? '') || null
   const categoryIdRaw = (formData.get('categoryId') as string | null)?.trim() ?? ''
   const categoryId = categoryIdRaw ? categoryIdRaw : null
 
-  if (!slug && !published) {
+  if (!slug && visibility === 'draft') {
     slug = `draft-${Date.now()}`
   }
 
@@ -76,7 +88,7 @@ function parseFormData(formData: FormData): PostInput {
           .map((t) => t.trim())
           .filter(Boolean)
       : [],
-    published,
+    visibility,
     coverImage,
     categoryId,
   }
@@ -84,11 +96,12 @@ function parseFormData(formData: FormData): PostInput {
 
 function validate(input: PostInput): string | null {
   if (!input.title) return '제목을 입력해주세요.'
-  if (input.published && !input.slug) return 'slug 를 입력해주세요.'
+  const requiresFullForm = input.visibility !== 'draft'
+  if (requiresFullForm && !input.slug) return 'slug 를 입력해주세요.'
   if (input.slug && !/^[a-zA-Z0-9가-힣]+(?:-[a-zA-Z0-9가-힣]+)*$/.test(input.slug)) {
     return 'slug 형식이 올바르지 않습니다. (문자/숫자/하이픈만, 공백·특수문자 불가)'
   }
-  if (input.published && !input.content.trim()) return '내용을 입력해주세요.'
+  if (requiresFullForm && !input.content.trim()) return '내용을 입력해주세요.'
   if (input.coverImage && !isHttpsUrl(input.coverImage)) {
     return '커버 이미지는 https URL 이어야 합니다.'
   }
@@ -105,6 +118,12 @@ function revalidateAll(...slugs: string[]) {
     revalidatePath(`/posts/${slug}`)
   }
   revalidatePath('/admin/posts')
+}
+
+function toastForVisibility(visibility: PostVisibility): string | undefined {
+  if (visibility === 'draft') return '임시저장 되었습니다.'
+  if (visibility === 'private') return '비공개로 출간되었습니다.'
+  return undefined
 }
 
 export async function createPost(
@@ -126,7 +145,7 @@ export async function createPost(
       content: input.content,
       excerpt: input.excerpt,
       tags: input.tags,
-      published: input.published,
+      visibility: input.visibility,
       cover_image: input.coverImage,
       category_id: input.categoryId,
     })
@@ -139,11 +158,21 @@ export async function createPost(
   }
 
   revalidateAll(data.slug)
+
+  if (input.visibility === 'draft') {
+    return {
+      ok: true,
+      id: data.id,
+      redirectTo: `/admin/posts/${data.id}/edit`,
+      toast: toastForVisibility('draft'),
+    }
+  }
+
   return {
     ok: true,
     id: data.id,
-    redirectTo: input.published ? '/admin/posts' : `/admin/posts/${data.id}/edit`,
-    toast: input.published ? undefined : '임시저장 되었습니다.',
+    redirectTo: '/admin/posts',
+    toast: toastForVisibility(input.visibility),
   }
 }
 
@@ -175,7 +204,7 @@ export async function updatePost(
       content: input.content,
       excerpt: input.excerpt,
       tags: input.tags,
-      published: input.published,
+      visibility: input.visibility,
       cover_image: input.coverImage,
       category_id: input.categoryId,
     })
@@ -190,8 +219,8 @@ export async function updatePost(
   return {
     ok: true,
     id,
-    redirectTo: input.published ? '/admin/posts' : undefined,
-    toast: input.published ? undefined : '임시저장 되었습니다.',
+    redirectTo: input.visibility === 'draft' ? undefined : '/admin/posts',
+    toast: toastForVisibility(input.visibility),
   }
 }
 
@@ -208,7 +237,10 @@ export async function deletePost(id: string, slug: string): Promise<ActionState>
 export async function publishPost(id: string, slug: string): Promise<ActionState> {
   const guard = await requireAdmin()
   if (guard.error) return { ok: false, error: guard.error }
-  const { error } = await guard.supabase.from('posts').update({ published: true }).eq('id', id)
+  const { error } = await guard.supabase
+    .from('posts')
+    .update({ visibility: 'public' })
+    .eq('id', id)
   if (error) return { ok: false, error: error.message }
   revalidateAll(slug)
   return { ok: true }
@@ -217,7 +249,10 @@ export async function publishPost(id: string, slug: string): Promise<ActionState
 export async function unpublishPost(id: string, slug: string): Promise<ActionState> {
   const guard = await requireAdmin()
   if (guard.error) return { ok: false, error: guard.error }
-  const { error } = await guard.supabase.from('posts').update({ published: false }).eq('id', id)
+  const { error } = await guard.supabase
+    .from('posts')
+    .update({ visibility: 'draft' })
+    .eq('id', id)
   if (error) return { ok: false, error: error.message }
   revalidateAll(slug)
   return { ok: true }

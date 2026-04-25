@@ -15,7 +15,7 @@ type Props = {
   defaultSlug?: string
   defaultExcerpt?: string
   defaultCoverImage?: string
-  defaultPublished?: boolean
+  defaultVisibility?: 'public' | 'private'
   categoryPicker: React.ReactNode
   dangerZone?: React.ReactNode
 }
@@ -27,13 +27,11 @@ export default function PublishModal({
   defaultSlug = '',
   defaultExcerpt = '',
   defaultCoverImage = '',
-  defaultPublished = true,
+  defaultVisibility = 'public',
   categoryPicker,
   dangerZone,
 }: Props) {
-  const [visibility, setVisibility] = useState<'public' | 'private'>(
-    defaultPublished ? 'public' : 'private',
-  )
+  const [visibility, setVisibility] = useState<'public' | 'private'>(defaultVisibility)
   const [excerpt, setExcerpt] = useState(defaultExcerpt)
   const [coverImage, setCoverImage] = useState(defaultCoverImage)
   const [uploading, setUploading] = useState(false)
@@ -279,12 +277,12 @@ export default function PublishModal({
           </button>
           <button
             type="submit"
-            name="published"
-            value={visibility === 'public' ? 'true' : 'false'}
+            name="visibility"
+            value={visibility === 'public' ? 'public' : 'private'}
             disabled={uploading}
             className="inline-flex items-center gap-1.5 rounded-lg border border-ink-800 dark:border-craft-50 bg-ink-800 dark:bg-craft-50 px-4 py-1.5 text-sm text-craft-50 dark:text-ink-900 hover:bg-ink-600 dark:hover:bg-craft-200 disabled:opacity-50"
           >
-            {visibility === 'public' ? '출간하기' : '비공개 저장'}
+            {visibility === 'public' ? '출간하기' : '비공개 출간'}
           </button>
         </div>
       </div>

@@ -26,8 +26,8 @@ function DraftButton() {
   return (
     <button
       type="submit"
-      name="published"
-      value="false"
+      name="visibility"
+      value="draft"
       disabled={pending}
       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-ink-600 dark:text-craft-100 hover:text-ink-900 dark:hover:text-craft-50 disabled:opacity-50"
     >
@@ -121,7 +121,7 @@ export default function NewPostForm({
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         postTitle={title}
-        defaultPublished={true}
+        defaultVisibility="public"
         categoryPicker={categoryPicker}
       />
     </form>
