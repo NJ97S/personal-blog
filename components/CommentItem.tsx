@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { deleteComment, updateComment } from '@/app/actions/comments'
 import { getToken, removeToken } from '@/lib/comment-tokens'
+import PasswordInput from './PasswordInput'
 
 type Comment = {
   id: string
@@ -143,14 +144,13 @@ export default function CommentItem({
             className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-craft-400"
           />
           {!hasToken && (
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="작성 시 입력한 비밀번호"
               minLength={4}
               maxLength={20}
-              className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-craft-400"
+              autoComplete="current-password"
             />
           )}
           {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
@@ -184,14 +184,13 @@ export default function CommentItem({
             이 댓글을 삭제하시겠어요? 되돌릴 수 없습니다.
           </p>
           {!hasToken && (
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="작성 시 입력한 비밀번호"
               minLength={4}
               maxLength={20}
-              className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-craft-400"
+              autoComplete="current-password"
             />
           )}
           {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}

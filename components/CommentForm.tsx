@@ -4,6 +4,7 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { useEffect, useRef } from 'react'
 import { createComment, type CreateCommentState } from '@/app/actions/comments'
 import { saveToken } from '@/lib/comment-tokens'
+import PasswordInput from './PasswordInput'
 
 const initialState: CreateCommentState = { ok: false }
 
@@ -62,14 +63,13 @@ export default function CommentForm({
           <label htmlFor="password" className="block text-sm mb-1">
             비밀번호 <span className="text-xs text-ink-400">(수정·삭제 시 사용, 4~20자)</span>
           </label>
-          <input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             required
             minLength={4}
             maxLength={20}
-            className="w-full rounded-sm border border-craft-200 dark:border-ink-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-craft-400"
+            autoComplete="new-password"
           />
         </div>
       </div>
