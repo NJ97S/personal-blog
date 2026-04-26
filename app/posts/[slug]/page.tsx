@@ -317,7 +317,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
         {(prevPost || nextPost) && (
           <nav
             aria-label="이전/다음 포스트"
-            className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3"
+            className="mt-16 pt-8 border-t border-craft-200 dark:border-ink-600 grid grid-cols-1 md:grid-cols-2 gap-3"
           >
             {prevPost ? (
               <Link

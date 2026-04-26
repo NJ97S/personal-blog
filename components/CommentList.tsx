@@ -35,7 +35,7 @@ export default function CommentList({
   }, [])
 
   return (
-    <section className="mt-16 pt-8 border-t border-craft-200 dark:border-ink-600">
+    <section className="mt-8 pt-8 border-t border-craft-200 dark:border-ink-600">
       <h2 className="text-xl font-serif font-bold mb-4">댓글 {comments.length}</h2>
 
       <ul className="space-y-4 mb-8">
