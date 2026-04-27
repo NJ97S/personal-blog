@@ -27,6 +27,7 @@ export default async function RecentComments() {
     .select(
       'id, author_name, content, created_at, post:posts!inner(slug, title, visibility)',
     )
+    .is('deleted_at', null)
     .eq('post.visibility', 'public')
     .order('created_at', { ascending: false })
     .limit(10)
