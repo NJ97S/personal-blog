@@ -2,17 +2,22 @@ import Link from 'next/link'
 import { TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
+type PopularPostRow = {
+  id: string
+  title: string
+  slug: string
+  created_at: string
+  view_count: number
+}
+
 export default async function PopularPosts() {
   const supabase = createClient()
-  // view_count 도입 전까지는 최신 발행 글을 '인기 글'로 노출
-  const { data } = await supabase
-    .from('posts')
-    .select('id, title, slug, created_at')
-    .eq('visibility', 'public')
-    .order('created_at', { ascending: false })
-    .limit(5)
+  const { data } = await supabase.rpc('popular_posts', {
+    p_window_days: 30,
+    p_limit: 5,
+  })
 
-  const posts = data ?? []
+  const posts = (data ?? []) as PopularPostRow[]
 
   return (
     <section className="craft-card p-4">
