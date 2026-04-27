@@ -36,7 +36,7 @@ export default function CategoryDrawer({ tree }: Props) {
       aria-modal={open}
       aria-label="카테고리"
       aria-hidden={!open}
-      className={`fixed inset-0 z-50 md:hidden ${
+      className={`fixed inset-0 z-50 lg:hidden ${
         open ? 'pointer-events-auto' : 'pointer-events-none'
       }`}
     >
@@ -74,7 +74,7 @@ export default function CategoryDrawer({ tree }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="카테고리 열기"
-        className="md:hidden rounded-sm border border-craft-200 dark:border-ink-600 px-2 py-1.5 text-sm hover:bg-craft-100 dark:hover:bg-ink-800"
+        className="lg:hidden rounded-sm border border-craft-200 dark:border-ink-600 px-2 py-1.5 text-sm hover:bg-craft-100 dark:hover:bg-ink-800"
       >
         ☰
       </button>
