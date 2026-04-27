@@ -32,6 +32,15 @@
   }
 }
 
+/* Hide scrollbar while keeping scrollability */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
 /* Callout — velog layout using the craft palette */
 .craft-prose blockquote {
   @apply my-6 rounded-r-lg border-l-4 border-craft-400 dark:border-craft-300 bg-craft-100 dark:bg-ink-800/50 px-5 py-4 not-italic;

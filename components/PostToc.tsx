@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type Heading = { id: string; text: string; level: number }
 
 export default function PostToc() {
   const [headings, setHeadings] = useState<Heading[]>([])
   const [activeId, setActiveId] = useState<string>('')
+  const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     const article = document.querySelector('article')
@@ -44,10 +45,33 @@ export default function PostToc() {
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    const nav = navRef.current
+    if (!nav || !activeId) return
+    const link = nav.querySelector<HTMLElement>(`a[href="#${CSS.escape(activeId)}"]`)
+    if (!link) return
+    const navRect = nav.getBoundingClientRect()
+    const linkRect = link.getBoundingClientRect()
+    const margin = 8
+    let delta = 0
+    if (linkRect.top < navRect.top + margin) {
+      delta = linkRect.top - navRect.top - margin
+    } else if (linkRect.bottom > navRect.bottom - margin) {
+      delta = linkRect.bottom - navRect.bottom + margin
+    }
+    if (delta !== 0) {
+      nav.scrollTo({ top: nav.scrollTop + delta, behavior: 'smooth' })
+    }
+  }, [activeId])
+
   if (headings.length === 0) return null
 
   return (
-    <nav aria-label="목차" className="sticky top-24 text-sm">
+    <nav
+      ref={navRef}
+      aria-label="목차"
+      className="sticky top-24 text-sm max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-hidden"
+    >
       <p className="font-serif font-bold mb-2 text-ink-900 dark:text-craft-50">목차</p>
       <ul className="space-y-1 border-l border-craft-200 dark:border-ink-600">
         {headings.map((h) => {
