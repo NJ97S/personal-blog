@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFormStatus } from 'react-dom'
 import { ArrowLeft } from 'lucide-react'
@@ -22,21 +22,24 @@ function slugify(input: string) {
     .replace(/^-|-$/g, '')
 }
 
-function DraftButton({ ready }: { ready: boolean }) {
-  const { pending } = useFormStatus()
-  const disabled = !ready || pending
-  return (
-    <button
-      type="submit"
-      name="visibility"
-      value="draft"
-      disabled={disabled}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-ink-600 dark:text-craft-100 hover:text-ink-900 dark:hover:text-craft-50 disabled:opacity-50"
-    >
-      {pending ? '저장 중…' : '임시저장'}
-    </button>
-  )
-}
+const DraftButton = forwardRef<HTMLButtonElement, { ready: boolean }>(
+  function DraftButton({ ready }, ref) {
+    const { pending } = useFormStatus()
+    const disabled = !ready || pending
+    return (
+      <button
+        ref={ref}
+        type="submit"
+        name="visibility"
+        value="draft"
+        disabled={disabled}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-ink-600 dark:text-craft-100 hover:text-ink-900 dark:hover:text-craft-50 disabled:opacity-50"
+      >
+        {pending ? '저장 중…' : '임시저장'}
+      </button>
+    )
+  },
+)
 
 export default function NewPostForm({
   categoryPicker,
@@ -49,8 +52,24 @@ export default function NewPostForm({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const router = useRouter()
   const hydrated = useHydrated()
+  const formRef = useRef<HTMLFormElement>(null)
+  const draftBtnRef = useRef<HTMLButtonElement>(null)
 
   const markDirty = useCallback(() => setDirty(true), [])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault()
+        const btn = draftBtnRef.current
+        const form = formRef.current
+        if (!btn || !form || btn.disabled) return
+        form.requestSubmit(btn)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   const handleAction = useCallback(
     async (formData: FormData) => {
@@ -85,7 +104,7 @@ export default function NewPostForm({
   }
 
   return (
-    <form action={handleAction} onChange={markDirty}>
+    <form ref={formRef} action={handleAction} onChange={markDirty}>
       <PostEditorShell
         actions={
           <>
@@ -101,7 +120,7 @@ export default function NewPostForm({
               {errorMsg && (
                 <p className="text-sm text-red-600 dark:text-red-400">{errorMsg}</p>
               )}
-              <DraftButton ready={hydrated} />
+              <DraftButton ref={draftBtnRef} ready={hydrated} />
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
