@@ -50,6 +50,7 @@ const sanitizeSchema = {
 function formatDate(iso: string) {
   try {
     return new Date(iso).toLocaleDateString('ko-KR', {
+      timeZone: 'Asia/Seoul',
       year: 'numeric',
       month: 'long',
       day: 'numeric',

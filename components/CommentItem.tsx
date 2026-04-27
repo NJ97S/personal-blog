@@ -17,7 +17,7 @@ type Mode = 'view' | 'edit' | 'delete'
 
 function formatDate(iso: string) {
   try {
-    return new Date(iso).toLocaleString('ko-KR')
+    return new Date(iso).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
   } catch {
     return iso
   }

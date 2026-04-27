@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 function formatDate(iso: string) {
   try {
     return new Date(iso).toLocaleDateString('ko-KR', {
+      timeZone: 'Asia/Seoul',
       month: 'short',
       day: 'numeric',
     })

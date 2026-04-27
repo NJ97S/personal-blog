@@ -16,7 +16,7 @@ export default async function OgImage({ params }: { params: { slug: string } }) 
 
   const title = post?.title ?? 'ShyLog'
   const date = post?.created_at
-    ? new Date(post.created_at).toLocaleDateString('ko-KR')
+    ? new Date(post.created_at).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' })
     : ''
 
   return new ImageResponse(
