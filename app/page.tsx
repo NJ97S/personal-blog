@@ -1,43 +1,47 @@
-import Link from 'next/link'
 import Layout from '@/components/Layout'
-import PostCard from '@/components/PostCard'
+import InfinitePostList from '@/components/InfinitePostList'
 import JsonLd from '@/components/JsonLd'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { site } from '@/lib/site'
+import { FEED_PAGE_SIZE, type FeedItem } from '@/lib/feed'
 
-const PAGE_SIZE = 10
-
-type SearchParams = { cursor?: string }
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: SearchParams
-}) {
+export default async function Home() {
   const supabase = createClient()
 
-  let query = supabase
+  const query = supabase
     .from('posts')
     .select(
       'id, title, slug, excerpt, tags, created_at, cover_image, category_id',
     )
     .eq('visibility', 'public')
     .order('created_at', { ascending: false })
-    .limit(PAGE_SIZE + 1)
-
-  if (searchParams.cursor) {
-    query = query.lt('created_at', searchParams.cursor)
-  }
+    .limit(FEED_PAGE_SIZE + 1)
 
   const [{ data: rows, error }, tree] = await Promise.all([query, fetchCategoryTree()])
 
   const posts = rows ?? []
-  const hasMore = posts.length > PAGE_SIZE
-  const visible = hasMore ? posts.slice(0, PAGE_SIZE) : posts
-  const nextCursor = hasMore ? visible[visible.length - 1]?.created_at : null
-
+  const hasMore = posts.length > FEED_PAGE_SIZE
+  const visible = hasMore ? posts.slice(0, FEED_PAGE_SIZE) : posts
   const categoryById = new Map(walkTree(tree).map((n) => [n.id, n] as const))
+
+  const initialItems: FeedItem[] = visible.map((row) => {
+    const cat = row.category_id ? categoryById.get(row.category_id) : undefined
+    return {
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      excerpt: row.excerpt,
+      tags: row.tags,
+      created_at: row.created_at,
+      cover_image: row.cover_image,
+      category: cat ? { name: cat.name, path: cat.path } : null,
+    }
+  })
+
+  const initialCursor = hasMore
+    ? initialItems[initialItems.length - 1]?.created_at ?? null
+    : null
 
   const websiteSchema = {
     '@context': 'https://schema.org',
@@ -75,38 +79,15 @@ export default async function Home({
         </p>
       )}
 
-      {!error && visible.length === 0 && (
+      {!error && initialItems.length === 0 && (
         <p className="craft-card p-4 text-sm text-ink-400">아직 발행된 글이 없습니다.</p>
       )}
 
-      <div className="space-y-4">
-        {visible.map((post) => {
-          const cat = post.category_id ? categoryById.get(post.category_id) : undefined
-          return (
-            <PostCard
-              key={post.id}
-              id={post.id}
-              title={post.title}
-              slug={post.slug}
-              excerpt={post.excerpt}
-              tags={post.tags ?? []}
-              created_at={post.created_at}
-              coverImage={post.cover_image}
-              category={cat ? { name: cat.name, path: cat.path } : null}
-            />
-          )
-        })}
-      </div>
-
-      {nextCursor && (
-        <nav className="mt-8 flex justify-center">
-          <Link
-            href={`/?cursor=${encodeURIComponent(nextCursor)}`}
-            className="craft-card px-4 py-2 text-sm hover:bg-craft-100 dark:hover:bg-ink-800"
-          >
-            다음 페이지
-          </Link>
-        </nav>
+      {initialItems.length > 0 && (
+        <InfinitePostList
+          initialItems={initialItems}
+          initialCursor={initialCursor}
+        />
       )}
     </Layout>
   )

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
-import PostCard from '@/components/PostCard'
+import InfinitePostList from '@/components/InfinitePostList'
 import JsonLd from '@/components/JsonLd'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -11,13 +11,11 @@ import {
   walkTree,
 } from '@/lib/categories'
 import { site } from '@/lib/site'
+import { FEED_PAGE_SIZE, type FeedItem } from '@/lib/feed'
 
 export const revalidate = 60
 
-const PAGE_SIZE = 10
-
 type Params = { slug: string[] }
-type SearchParams = { cursor?: string }
 
 export async function generateMetadata({ params }: { params: Params }) {
   const slugs = params.slug.map((s) => decodeURIComponent(s))
@@ -42,13 +40,7 @@ export async function generateMetadata({ params }: { params: Params }) {
   }
 }
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: {
-  params: Params
-  searchParams: SearchParams
-}) {
+export default async function CategoryPage({ params }: { params: Params }) {
   const slugs = params.slug.map((s) => decodeURIComponent(s))
   const node = await findCategoryByPath(slugs)
   if (!node) notFound()
@@ -63,7 +55,7 @@ export default async function CategoryPage({
   const ids = collectDescendantIds(node)
   const supabase = createClient()
 
-  let query = supabase
+  const { data: rows } = await supabase
     .from('posts')
     .select(
       'id, title, slug, excerpt, tags, created_at, cover_image, category_id',
@@ -71,19 +63,29 @@ export default async function CategoryPage({
     .eq('visibility', 'public')
     .in('category_id', ids)
     .order('created_at', { ascending: false })
-    .limit(PAGE_SIZE + 1)
+    .limit(FEED_PAGE_SIZE + 1)
 
-  if (searchParams.cursor) {
-    query = query.lt('created_at', searchParams.cursor)
-  }
-
-  const { data: rows } = await query
   const posts = rows ?? []
-  const hasMore = posts.length > PAGE_SIZE
-  const visible = hasMore ? posts.slice(0, PAGE_SIZE) : posts
-  const nextCursor = hasMore ? visible[visible.length - 1]?.created_at : null
+  const hasMore = posts.length > FEED_PAGE_SIZE
+  const visible = hasMore ? posts.slice(0, FEED_PAGE_SIZE) : posts
 
   const categoryById = new Map(all.map((n) => [n.id, n] as const))
+  const initialItems: FeedItem[] = visible.map((row) => {
+    const cat = row.category_id ? categoryById.get(row.category_id) : undefined
+    return {
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      excerpt: row.excerpt,
+      tags: row.tags,
+      created_at: row.created_at,
+      cover_image: row.cover_image,
+      category: cat ? { name: cat.name, path: cat.path } : null,
+    }
+  })
+  const initialCursor = hasMore
+    ? initialItems[initialItems.length - 1]?.created_at ?? null
+    : null
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -135,41 +137,16 @@ export default async function CategoryPage({
         </p>
       </section>
 
-      <div className="space-y-4">
-        {visible.map((p) => {
-          const cat = p.category_id ? categoryById.get(p.category_id) : undefined
-          return (
-            <PostCard
-              key={p.id}
-              id={p.id}
-              title={p.title}
-              slug={p.slug}
-              excerpt={p.excerpt}
-              tags={p.tags ?? []}
-              created_at={p.created_at}
-              coverImage={p.cover_image}
-              category={cat ? { name: cat.name, path: cat.path } : null}
-            />
-          )
-        })}
-        {visible.length === 0 && (
-          <p className="craft-card p-4 text-sm text-ink-400">
-            이 카테고리에는 아직 글이 없습니다.
-          </p>
-        )}
-      </div>
-
-      {nextCursor && (
-        <nav className="mt-8 flex justify-center">
-          <Link
-            href={`/categories/${slugs
-              .map(encodeURIComponent)
-              .join('/')}?cursor=${encodeURIComponent(nextCursor)}`}
-            className="craft-card px-4 py-2 text-sm hover:bg-craft-100 dark:hover:bg-ink-800"
-          >
-            다음 페이지
-          </Link>
-        </nav>
+      {initialItems.length === 0 ? (
+        <p className="craft-card p-4 text-sm text-ink-400">
+          이 카테고리에는 아직 글이 없습니다.
+        </p>
+      ) : (
+        <InfinitePostList
+          initialItems={initialItems}
+          initialCursor={initialCursor}
+          categoryIds={ids}
+        />
       )}
     </Layout>
   )
