@@ -1,12 +1,5 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkBreaks from 'remark-breaks'
-import rehypeRaw from 'rehype-raw'
-import rehypeHighlight from 'rehype-highlight'
-import rehypeSlug from 'rehype-slug'
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import Layout from '@/components/Layout'
 import Comments from '@/components/Comments'
@@ -14,6 +7,7 @@ import PostToc from '@/components/PostToc'
 import SeriesBox from '@/components/SeriesBox'
 import ShareButton from '@/components/ShareButton'
 import JsonLd from '@/components/JsonLd'
+import MarkdownView from '@/components/MarkdownView'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { site } from '@/lib/site'
@@ -21,31 +15,6 @@ import { trackView } from '@/app/actions/views'
 
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
-
-const sanitizeSchema = {
-  ...defaultSchema,
-  attributes: {
-    ...defaultSchema.attributes,
-    h1: [...(defaultSchema.attributes?.h1 ?? []), 'id'],
-    h2: [...(defaultSchema.attributes?.h2 ?? []), 'id'],
-    h3: [...(defaultSchema.attributes?.h3 ?? []), 'id'],
-    h4: [...(defaultSchema.attributes?.h4 ?? []), 'id'],
-    h5: [...(defaultSchema.attributes?.h5 ?? []), 'id'],
-    h6: [...(defaultSchema.attributes?.h6 ?? []), 'id'],
-    code: [
-      ...(defaultSchema.attributes?.code || []),
-      ['className', /^language-[a-z0-9-]+$/, /^hljs(-[a-z0-9-]+)?$/],
-    ],
-    span: [
-      ...(defaultSchema.attributes?.span || []),
-      ['className', /^hljs(-[a-z0-9-]+)?$/],
-    ],
-    pre: [
-      ...(defaultSchema.attributes?.pre || []),
-      ['className', /^hljs(-[a-z0-9-]+)?$/],
-    ],
-  },
-}
 
 function formatDate(iso: string) {
   try {
@@ -301,19 +270,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
           />
         )}
 
-        <div className="craft-prose prose-neutral dark:prose-invert">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkBreaks]}
-            rehypePlugins={[
-              rehypeRaw,
-              rehypeSlug,
-              rehypeHighlight,
-              [rehypeSanitize, sanitizeSchema],
-            ]}
-          >
-            {post.content}
-          </ReactMarkdown>
-        </div>
+        <MarkdownView content={post.content} />
 
         {(prevPost || nextPost) && (
           <nav

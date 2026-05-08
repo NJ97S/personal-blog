@@ -2,9 +2,8 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
-import remarkBreaks from 'remark-breaks'
+import MarkdownView from './MarkdownView'
 import '@uiw/react-md-editor/markdown-editor.css'
-import '@uiw/react-markdown-preview/markdown.css'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), {
   ssr: false,
@@ -44,7 +43,9 @@ export default function MarkdownEditor({
         onChange={(val) => setValue(val ?? '')}
         height={height}
         preview="live"
-        previewOptions={{ remarkPlugins: [remarkBreaks] }}
+        components={{
+          preview: (source) => <MarkdownView content={source} compact />,
+        }}
       />
     </div>
   )
