@@ -17,7 +17,7 @@ export default function SearchBox() {
           id="search-q"
           name="q"
           type="search"
-          placeholder="검색…"
+          placeholder="검색… (#태그 가능)"
           maxLength={100}
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-ink-400"
         />
