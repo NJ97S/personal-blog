@@ -25,7 +25,14 @@ const config: Config = {
         },
       },
       fontFamily: {
-        serif: ['var(--font-kkukkukk)', 'MemomentKkukkukk', 'serif'],
+        serif: [
+          'var(--font-kkukkukk)',
+          'MemomentKkukkukk',
+          '"Apple SD Gothic Neo"',
+          '"Malgun Gothic"',
+          'system-ui',
+          'sans-serif',
+        ],
         mono: ['var(--font-jetbrains-mono)', 'JetBrains Mono', 'monospace'],
       },
     },

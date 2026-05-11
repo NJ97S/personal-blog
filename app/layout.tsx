@@ -6,10 +6,13 @@ import { site } from '@/lib/site'
 import './globals.css'
 
 const kkukkukk = localFont({
-  src: './fonts/memoment-kkukkukk.ttf',
+  src: './fonts/memoment-kkukkukk.woff2',
   variable: '--font-kkukkukk',
   display: 'swap',
   weight: '400',
+  preload: true,
+  adjustFontFallback: 'Times New Roman',
+  fallback: ['Apple SD Gothic Neo', 'Malgun Gothic', 'system-ui', 'sans-serif'],
 })
 
 const jetbrainsMono = JetBrains_Mono({
