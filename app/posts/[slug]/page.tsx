@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import Layout from '@/components/Layout'
 import Comments from '@/components/Comments'
@@ -268,6 +269,21 @@ export default async function PostPage({ params }: { params: { slug: string } })
             posts={seriesPosts}
             currentId={post.id}
           />
+        )}
+
+        {post.cover_image && (
+          <figure className="mb-8 overflow-hidden rounded-lg border border-craft-200 dark:border-ink-600 bg-craft-100 dark:bg-ink-800/60">
+            <div className="relative w-full aspect-[16/9]">
+              <Image
+                src={post.cover_image}
+                alt=""
+                fill
+                priority
+                sizes="(min-width: 768px) 768px, 100vw"
+                className="object-cover"
+              />
+            </div>
+          </figure>
         )}
 
         <MarkdownView content={post.content} />
