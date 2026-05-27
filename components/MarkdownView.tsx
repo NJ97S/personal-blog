@@ -32,6 +32,23 @@ const sanitizeSchema = {
   },
 }
 
+// Stamp each rendered element with the markdown source line it originates from.
+// Runs *after* rehypeSanitize: hast-util-sanitize preserves node.position, so we
+// can safely add the `data-line` attribute without it being stripped or needing
+// a schema whitelist. The editor preview uses these anchors for scroll sync.
+function rehypeSourceLine() {
+  return (tree: unknown) => {
+    const walk = (node: any) => {
+      if (node?.type === 'element' && node.position?.start?.line != null) {
+        node.properties = node.properties ?? {}
+        node.properties.dataLine = String(node.position.start.line)
+      }
+      if (Array.isArray(node?.children)) node.children.forEach(walk)
+    }
+    walk(tree)
+  }
+}
+
 const remarkPlugins: PluggableList = [remarkGfm, remarkBreaks]
 const rehypePlugins: PluggableList = [
   rehypeRaw,
@@ -39,14 +56,22 @@ const rehypePlugins: PluggableList = [
   rehypeHighlight,
   [rehypeSanitize, sanitizeSchema],
 ]
+const rehypePluginsAnnotated: PluggableList = [...rehypePlugins, rehypeSourceLine]
 
 type Props = {
   content: string
   compact?: boolean
   className?: string
+  /** Annotate rendered blocks with `data-line` for editor scroll sync. */
+  annotateLines?: boolean
 }
 
-export default function MarkdownView({ content, compact, className }: Props) {
+export default function MarkdownView({
+  content,
+  compact,
+  className,
+  annotateLines,
+}: Props) {
   const wrapperClass = [
     'craft-prose prose-neutral dark:prose-invert',
     compact ? 'craft-prose-compact' : '',
@@ -59,7 +84,7 @@ export default function MarkdownView({ content, compact, className }: Props) {
     <div className={wrapperClass}>
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
-        rehypePlugins={rehypePlugins}
+        rehypePlugins={annotateLines ? rehypePluginsAnnotated : rehypePlugins}
       >
         {content}
       </ReactMarkdown>

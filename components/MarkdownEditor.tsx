@@ -1,8 +1,9 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import MarkdownView from './MarkdownView'
+import { useMarkdownScrollSync } from './useMarkdownScrollSync'
 import '@uiw/react-md-editor/markdown-editor.css'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), {
@@ -25,6 +26,9 @@ export default function MarkdownEditor({
 }: Props) {
   const [value, setValue] = useState<string>(defaultValue)
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light')
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useMarkdownScrollSync(rootRef, value)
 
   useEffect(() => {
     const root = document.documentElement
@@ -36,15 +40,18 @@ export default function MarkdownEditor({
   }, [])
 
   return (
-    <div data-color-mode={colorMode}>
+    <div data-color-mode={colorMode} ref={rootRef}>
       <input type="hidden" name={name} value={value} readOnly />
       <MDEditor
         value={value}
         onChange={(val) => setValue(val ?? '')}
         height={height}
         preview="live"
+        enableScroll={false}
         components={{
-          preview: (source) => <MarkdownView content={source} compact />,
+          preview: (source) => (
+            <MarkdownView content={source} compact annotateLines />
+          ),
         }}
       />
     </div>
