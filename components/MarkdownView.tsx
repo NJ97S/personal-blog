@@ -42,6 +42,11 @@ function rehypeSourceLine() {
       if (node?.type === 'element' && node.position?.start?.line != null) {
         node.properties = node.properties ?? {}
         node.properties.dataLine = String(node.position.start.line)
+        // End line too, so the sync can interpolate *through* multi-line blocks
+        // (images, code, tables, raw HTML) instead of pinning them to one anchor.
+        if (node.position.end?.line != null) {
+          node.properties.dataLineEnd = String(node.position.end.line)
+        }
       }
       if (Array.isArray(node?.children)) node.children.forEach(walk)
     }

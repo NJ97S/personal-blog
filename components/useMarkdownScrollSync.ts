@@ -7,21 +7,26 @@ import { useEffect, useRef, type RefObject } from 'react'
  * Why not the library's built-in sync? It maps editor↔preview scroll with a
  * single global linear ratio (scrollHeight / scrollHeight). Because one source
  * line (e.g. an image with a long URL) wraps into many rows on the left but
- * renders as a tall image block on the right, the source→preview height
- * relationship is non-linear, so a linear ratio drifts and the two panes end up
- * showing different content.
+ * renders as a tall block on the right, the source→preview height relationship
+ * is non-linear, so a linear ratio drifts and the panes show different content.
  *
- * This hook instead builds a per-line pixel map for each side and interpolates:
- *   - editor side: an off-screen mirror styled exactly like the textarea gives
- *     the y-offset of every source line (handles soft-wrapping).
- *   - preview side: blocks carry a `data-line` attribute (see MarkdownView's
- *     `annotateLines`), so we know which source line each rendered block starts
- *     at and its y-offset.
- * Scrolling one pane finds the source line at its viewport top, then scrolls the
- * other pane so the matching line sits at its top.
+ * This hook builds a monotonic "source line ↔ pixel" map for each side and
+ * interpolates between them:
+ *   - editor side: an off-screen mirror styled exactly like the textarea yields
+ *     the y-offset of every source line (so soft-wrapping is captured).
+ *   - preview side: each rendered block carries `data-line`/`data-line-end`
+ *     (see MarkdownView's `annotateLines`), so we know the source line range a
+ *     block spans and its pixel span — letting us interpolate *through* tall
+ *     blocks (images, code, tables, raw HTML) instead of snapping to one point.
+ *
+ * Reflows that change preview height (images finishing loading, typing) are
+ * watched with a ResizeObserver on the preview content, which re-measures and
+ * re-aligns from whichever pane the user last drove — so the preview never sits
+ * stale and then jumps on the next scroll.
  */
 
-// CSS properties copied from the textarea so the mirror wraps text identically.
+// CSS properties copied from the editor's text box so the mirror wraps text
+// identically (otherwise per-line offsets would drift).
 const COPY_PROPS = [
   'font-family',
   'font-size',
@@ -45,22 +50,46 @@ const COPY_PROPS = [
   'box-sizing',
 ] as const
 
-type Anchor = { line: number; top: number }
+// A monotonic map of {source line -> pixel top}, ascending in both fields.
+type Point = { line: number; top: number }
 
 function clampScroll(el: HTMLElement, top: number): number {
   return Math.max(0, Math.min(top, el.scrollHeight - el.clientHeight))
 }
 
-// Last index i (binary search) where values(i) <= target, assuming ascending.
-function lastIndexAtMost(length: number, valueAt: (i: number) => number, target: number): number {
+// Largest index i with arr[i][field] <= target (ascending arr). target is
+// assumed within [arr[0], arr[n-1]].
+function bisect(arr: Point[], field: 'line' | 'top', target: number): number {
   let lo = 0
-  let hi = length - 1
+  let hi = arr.length - 1
   while (lo < hi) {
     const mid = (lo + hi + 1) >> 1
-    if (valueAt(mid) <= target) lo = mid
+    if (arr[mid][field] <= target) lo = mid
     else hi = mid - 1
   }
   return lo
+}
+
+function topForLine(map: Point[], line: number): number {
+  const n = map.length
+  if (n === 0) return 0
+  if (line <= map[0].line) return map[0].top
+  if (line >= map[n - 1].line) return map[n - 1].top
+  const i = bisect(map, 'line', line)
+  const a = map[i]
+  const b = map[i + 1] ?? a
+  return a.top + (b.top - a.top) * (b.line > a.line ? (line - a.line) / (b.line - a.line) : 0)
+}
+
+function lineForTop(map: Point[], top: number): number {
+  const n = map.length
+  if (n === 0) return 1
+  if (top <= map[0].top) return map[0].line
+  if (top >= map[n - 1].top) return map[n - 1].line
+  const i = bisect(map, 'top', top)
+  const a = map[i]
+  const b = map[i + 1] ?? a
+  return a.line + (b.line - a.line) * (b.top > a.top ? (top - a.top) / (b.top - a.top) : 0)
 }
 
 function createController(root: HTMLElement, initialValue: string) {
@@ -68,19 +97,22 @@ function createController(root: HTMLElement, initialValue: string) {
   let textInner: HTMLElement | null = null // .w-md-editor-text (wrapping box)
   let textarea: HTMLElement | null = null // .w-md-editor-text-input
   let preview: HTMLElement | null = null // .w-md-editor-preview (scrolls)
+  let previewContent: HTMLElement | null = null // first child holding rendered markdown
   let mirror: HTMLDivElement | null = null
 
   let value = initialValue
-  let editorTops: number[] = [] // editorTops[i] = y-offset of source line i+1
-  let previewAnchors: Anchor[] = [] // ascending by line
+  let editorMap: Point[] = [] // source line -> y in editor scroll content
+  let previewMap: Point[] = [] // source line -> y in preview scroll content
   let mapsDirty = true
 
   let raf = 0
+  let lastDriver: 'editor' | 'preview' = 'editor'
   let lock: 'editor' | 'preview' | null = null
   let lockTimer = 0
 
   let mountObserver: MutationObserver | null = null
-  let resizeObserver: ResizeObserver | null = null
+  let sizeObserver: ResizeObserver | null = null
+  let contentObserver: ResizeObserver | null = null
   let attached = false
 
   const ensureMirror = () => {
@@ -101,113 +133,100 @@ function createController(root: HTMLElement, initialValue: string) {
   }
 
   // Rebuild the mirror's per-line divs from the current value, matching the
-  // textarea's typography and content width so wrapping is identical.
+  // editor's typography and content width so wrapping is identical.
+  //
+  // Copy styles from the *textarea* (and its highlight <pre>) — the element that
+  // actually lays the text out — NOT from `.w-md-editor-text`. They disagree on
+  // `word-break`: the wrapper says `keep-all` but the textarea overrides it to
+  // `break-word`. Copying the wrong one makes the mirror wrap far less than the
+  // real editor on real content (long code lines, Korean prose), so the line
+  // map underestimates positions and the preview drifts.
   const buildMirror = () => {
-    if (!textInner || !textarea) return
+    if (!textarea) return
     const m = ensureMirror()
-    const cs = getComputedStyle(textInner)
+    const cs = getComputedStyle(textarea)
     for (const prop of COPY_PROPS) m.style.setProperty(prop, cs.getPropertyValue(prop))
-    // font-family can be set on the input rather than inherited by the box.
-    m.style.setProperty('font-family', getComputedStyle(textarea).getPropertyValue('font-family'))
-    m.style.width = `${textInner.clientWidth}px`
+    m.style.width = `${textarea.clientWidth}px`
 
+    // Normalise line endings: the editor and the markdown parser both treat
+    // CRLF/CR as one break, so split the same way (one div per source line).
+    const lines = value.replace(/\r\n?/g, '\n').split('\n')
     const frag = document.createDocumentFragment()
-    for (const line of value.split('\n')) {
+    for (const line of lines) {
       const div = document.createElement('div')
-      // Zero-width space keeps empty lines at full line-height.
-      div.textContent = line.length ? line : '​'
+      div.textContent = line.length ? line : '​' // ZWSP keeps empty lines tall
       frag.appendChild(div)
     }
     m.textContent = ''
     m.appendChild(frag)
   }
 
+  // Enforce ascending-by-line and non-decreasing-by-top, collapsing duplicate
+  // lines (keep outermost = smallest top) so interpolation never reverses.
+  const monotonic = (points: Point[]): Point[] => {
+    points.sort((a, b) => a.line - b.line || a.top - b.top)
+    const out: Point[] = []
+    for (const p of points) {
+      const last = out[out.length - 1]
+      if (last && last.line === p.line) continue
+      if (last && p.top < last.top) out.push({ line: p.line, top: last.top })
+      else out.push(p)
+    }
+    return out
+  }
+
   const measure = () => {
     if (mirror) {
       const kids = mirror.children
-      editorTops = new Array(kids.length)
+      const pts: Point[] = new Array(kids.length)
       for (let i = 0; i < kids.length; i++) {
-        editorTops[i] = (kids[i] as HTMLElement).offsetTop
+        pts[i] = { line: i + 1, top: (kids[i] as HTMLElement).offsetTop }
       }
+      editorMap = pts
     }
     if (preview) {
-      const containerTop = preview.getBoundingClientRect().top
-      const baseScroll = preview.scrollTop
-      const seen = new Set<number>()
-      const anchors: Anchor[] = []
+      const cTop = preview.getBoundingClientRect().top
+      const base = preview.scrollTop
+      const pts: Point[] = []
       preview.querySelectorAll<HTMLElement>('[data-line]').forEach((el) => {
-        const line = Number(el.dataset.line)
-        if (!Number.isFinite(line) || seen.has(line)) return
-        seen.add(line)
-        anchors.push({
-          line,
-          top: el.getBoundingClientRect().top - containerTop + baseScroll,
-        })
+        const start = Number(el.dataset.line)
+        if (!Number.isFinite(start)) return
+        const endRaw = Number(el.dataset.lineEnd)
+        const end = Number.isFinite(endRaw) ? endRaw : start
+        const r = el.getBoundingClientRect()
+        pts.push({ line: start, top: r.top - cTop + base })
+        // The block occupies source lines [start, end]; attribute its bottom to
+        // the line just after it so lines inside map across its full pixel span.
+        pts.push({ line: end + 1, top: r.bottom - cTop + base })
       })
-      anchors.sort((a, b) => a.line - b.line)
-      previewAnchors = anchors
+      previewMap = monotonic(pts)
     }
     mapsDirty = false
   }
 
-  // editor scrollTop -> fractional source line (1-based)
-  const lineAtEditorTop = (scrollTop: number): number => {
-    const n = editorTops.length
-    if (n === 0) return 1
-    if (scrollTop <= editorTops[0]) return 1
-    if (scrollTop >= editorTops[n - 1]) return n
-    const i = lastIndexAtMost(n, (k) => editorTops[k], scrollTop)
-    const top = editorTops[i]
-    const next = editorTops[i + 1] ?? top
-    const frac = next > top ? (scrollTop - top) / (next - top) : 0
-    return i + 1 + frac
-  }
+  const canMap = () => editorMap.length >= 2 && previewMap.length >= 2
 
-  // fractional source line -> editor scrollTop
-  const editorTopForLine = (line: number): number => {
-    const n = editorTops.length
-    if (n === 0) return 0
-    const idx = Math.floor(line) - 1
-    if (idx <= 0) return editorTops[0]
-    if (idx >= n - 1) return editorTops[n - 1]
-    return editorTops[idx] + (editorTops[idx + 1] - editorTops[idx]) * (line - Math.floor(line))
-  }
-
-  // fractional source line -> preview scrollTop (interpolated between anchors)
-  const previewTopForLine = (line: number): number => {
-    const n = previewAnchors.length
-    if (n === 0) return 0
-    if (line <= previewAnchors[0].line) return previewAnchors[0].top
-    if (line >= previewAnchors[n - 1].line) return previewAnchors[n - 1].top
-    const i = lastIndexAtMost(n, (k) => previewAnchors[k].line, line)
-    const a = previewAnchors[i]
-    const b = previewAnchors[i + 1] ?? a
-    const frac = b.line > a.line ? (line - a.line) / (b.line - a.line) : 0
-    return a.top + (b.top - a.top) * frac
-  }
-
-  // preview scrollTop -> fractional source line
-  const lineAtPreviewTop = (scrollTop: number): number => {
-    const n = previewAnchors.length
-    if (n === 0) return 1
-    if (scrollTop <= previewAnchors[0].top) return previewAnchors[0].line
-    if (scrollTop >= previewAnchors[n - 1].top) return previewAnchors[n - 1].line
-    const i = lastIndexAtMost(n, (k) => previewAnchors[k].top, scrollTop)
-    const a = previewAnchors[i]
-    const b = previewAnchors[i + 1] ?? a
-    const frac = b.top > a.top ? (scrollTop - a.top) / (b.top - a.top) : 0
-    return a.line + (b.line - a.line) * frac
-  }
-
-  // Fallback: linear ratio when line anchors are unavailable (never worse than
-  // the library's default behaviour).
-  const canMap = () => editorTops.length >= 2 && previewAnchors.length >= 2
+  // Fallback linear ratio if line anchors are unavailable (never worse than the
+  // library's default behaviour).
   const proportional = (from: HTMLElement, to: HTMLElement): number => {
     const fromRange = from.scrollHeight - from.clientHeight
     const toRange = to.scrollHeight - to.clientHeight
     if (fromRange <= 0) return 0
     return (from.scrollTop / fromRange) * toRange
   }
+
+  // Follower scroll position for the driver's current scroll, mapped by source
+  // line so the line at the driver's viewport top sits at the follower's top.
+  // (Below that shared top line the panes legitimately diverge in height — a
+  // tall image makes the preview longer — but the top, which is what the user
+  // reads against, stays aligned. The user can reach any preview position by
+  // scrolling the preview directly, which drives the editor in reverse.)
+  const mappedTarget = (
+    driver: HTMLElement,
+    follower: HTMLElement,
+    driverMap: Point[],
+    followerMap: Point[],
+  ): number => clampScroll(follower, topForLine(followerMap, lineForTop(driverMap, driver.scrollTop)))
 
   const setLock = (who: 'editor' | 'preview') => {
     lock = who
@@ -220,23 +239,22 @@ function createController(root: HTMLElement, initialValue: string) {
   const syncFromEditor = () => {
     if (!editorArea || !preview) return
     if (mapsDirty) measure()
-    const target = canMap()
-      ? previewTopForLine(lineAtEditorTop(editorArea.scrollTop))
-      : proportional(editorArea, preview)
-    preview.scrollTop = clampScroll(preview, target)
+    preview.scrollTop = canMap()
+      ? mappedTarget(editorArea, preview, editorMap, previewMap)
+      : clampScroll(preview, proportional(editorArea, preview))
   }
 
   const syncFromPreview = () => {
     if (!editorArea || !preview) return
     if (mapsDirty) measure()
-    const target = canMap()
-      ? editorTopForLine(lineAtPreviewTop(preview.scrollTop))
-      : proportional(preview, editorArea)
-    editorArea.scrollTop = clampScroll(editorArea, target)
+    editorArea.scrollTop = canMap()
+      ? mappedTarget(preview, editorArea, previewMap, editorMap)
+      : clampScroll(editorArea, proportional(preview, editorArea))
   }
 
   const onEditorScroll = () => {
     if (lock === 'preview') return
+    lastDriver = 'editor'
     setLock('editor')
     cancelAnimationFrame(raf)
     raf = requestAnimationFrame(syncFromEditor)
@@ -244,14 +262,26 @@ function createController(root: HTMLElement, initialValue: string) {
 
   const onPreviewScroll = () => {
     if (lock === 'editor') return
+    lastDriver = 'preview'
     setLock('preview')
     cancelAnimationFrame(raf)
     raf = requestAnimationFrame(syncFromPreview)
   }
 
-  const onImageLoad = () => {
+  // Preview content reflowed (image loaded, typing, etc.): re-measure and
+  // re-align from the pane the user last drove, holding the lock so the
+  // programmatic scroll we trigger isn't mistaken for user input.
+  const onContentResize = () => {
     mapsDirty = true
+    if (!attached) return
+    setLock(lastDriver)
+    cancelAnimationFrame(raf)
+    raf = requestAnimationFrame(lastDriver === 'preview' ? syncFromPreview : syncFromEditor)
   }
+
+  const findPreviewContent = () =>
+    (preview?.querySelector(':scope > .craft-prose') as HTMLElement | null) ??
+    (preview?.firstElementChild as HTMLElement | null)
 
   const attach = (): boolean => {
     editorArea = root.querySelector('.w-md-editor-area')
@@ -265,15 +295,22 @@ function createController(root: HTMLElement, initialValue: string) {
 
     editorArea.addEventListener('scroll', onEditorScroll, { passive: true })
     preview.addEventListener('scroll', onPreviewScroll, { passive: true })
-    // Image loads change preview heights -> invalidate the anchor map.
-    preview.addEventListener('load', onImageLoad, true)
 
-    resizeObserver = new ResizeObserver(() => {
+    // Width changes re-wrap the mirror; observe the panes themselves.
+    sizeObserver = new ResizeObserver(() => {
       buildMirror()
       mapsDirty = true
     })
-    resizeObserver.observe(editorArea)
-    resizeObserver.observe(preview)
+    sizeObserver.observe(editorArea)
+    sizeObserver.observe(preview)
+
+    // Height changes (image load, reflow) come from the *content*, not the
+    // fixed-height pane — observe it and re-align.
+    previewContent = findPreviewContent()
+    if (previewContent) {
+      contentObserver = new ResizeObserver(onContentResize)
+      contentObserver.observe(previewContent)
+    }
 
     attached = true
     return true
@@ -295,15 +332,24 @@ function createController(root: HTMLElement, initialValue: string) {
       value = next
       if (attached) buildMirror()
       mapsDirty = true
+      // Preview content node is recreated on re-render; re-bind the observer.
+      if (attached && contentObserver) {
+        const node = findPreviewContent()
+        if (node && node !== previewContent) {
+          contentObserver.disconnect()
+          previewContent = node
+          contentObserver.observe(node)
+        }
+      }
     },
     destroy() {
       cancelAnimationFrame(raf)
       clearTimeout(lockTimer)
       mountObserver?.disconnect()
-      resizeObserver?.disconnect()
+      sizeObserver?.disconnect()
+      contentObserver?.disconnect()
       editorArea?.removeEventListener('scroll', onEditorScroll)
       preview?.removeEventListener('scroll', onPreviewScroll)
-      preview?.removeEventListener('load', onImageLoad, true)
       mirror?.remove()
       mirror = null
     },
@@ -324,8 +370,8 @@ export function useMarkdownScrollSync(
       controller.destroy()
       controllerRef.current = null
     }
-    // Intentionally run once: the controller observes DOM mount itself and
-    // value updates flow through the effect below.
+    // Run once: the controller observes DOM mount itself; value updates flow
+    // through the effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rootRef])
 
