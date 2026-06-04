@@ -237,6 +237,7 @@ export async function deletePost(id: string, slug: string): Promise<ActionState>
 export async function publishPost(id: string, slug: string): Promise<ActionState> {
   const guard = await requireAdmin()
   if (guard.error) return { ok: false, error: guard.error }
+  if (!UUID_RE.test(id)) return { ok: false, error: '잘못된 요청입니다.' }
   const { error } = await guard.supabase
     .from('posts')
     .update({ visibility: 'public' })
@@ -249,6 +250,7 @@ export async function publishPost(id: string, slug: string): Promise<ActionState
 export async function unpublishPost(id: string, slug: string): Promise<ActionState> {
   const guard = await requireAdmin()
   if (guard.error) return { ok: false, error: guard.error }
+  if (!UUID_RE.test(id)) return { ok: false, error: '잘못된 요청입니다.' }
   const { error } = await guard.supabase
     .from('posts')
     .update({ visibility: 'draft' })
