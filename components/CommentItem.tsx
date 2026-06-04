@@ -77,12 +77,20 @@ export default function CommentItem({
     const auth = tokenOrPassword()
     if (!auth) return
     setPending(true)
-    const res = await updateComment({
-      commentId: comment.id,
-      postSlug,
-      newContent: trimmed,
-      ...auth,
-    })
+    let res
+    try {
+      res = await updateComment({
+        commentId: comment.id,
+        postSlug,
+        newContent: trimmed,
+        ...auth,
+      })
+    } catch (e) {
+      console.warn('[CommentItem] update failed', e)
+      setPending(false)
+      setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
+      return
+    }
     setPending(false)
     if (!res.ok) {
       setError(res.error ?? '수정에 실패했습니다.')
@@ -101,11 +109,19 @@ export default function CommentItem({
     const auth = tokenOrPassword()
     if (!auth) return
     setPending(true)
-    const res = await deleteComment({
-      commentId: comment.id,
-      postSlug,
-      ...auth,
-    })
+    let res
+    try {
+      res = await deleteComment({
+        commentId: comment.id,
+        postSlug,
+        ...auth,
+      })
+    } catch (e) {
+      console.warn('[CommentItem] delete failed', e)
+      setPending(false)
+      setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
+      return
+    }
     setPending(false)
     if (!res.ok) {
       setError(res.error ?? '삭제에 실패했습니다.')

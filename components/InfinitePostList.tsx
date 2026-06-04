@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import PostCard from './PostCard'
 import { loadMorePosts } from '@/app/actions/feed'
 import type { FeedItem } from '@/lib/feed'
@@ -25,6 +25,23 @@ export default function InfinitePostList({
   const seenIdsRef = useRef<Set<string>>(
     new Set(initialItems.map((item) => item.id)),
   )
+
+  // 부모(카테고리 페이지 등)가 다른 initialItems를 새로 내려주면
+  // 이전 ID 집합이 그대로 남아 새 데이터의 동일 ID를 중복으로 잘못 필터링합니다.
+  // 상위 props 변화를 ID 시퀀스로 감지해 시드 상태와 ID 집합을 함께 동기화합니다.
+  const initialKey = useMemo(
+    () => initialItems.map((i) => i.id).join('|'),
+    [initialItems],
+  )
+  useEffect(() => {
+    setItems(initialItems)
+    setCursor(initialCursor)
+    setError(null)
+    loadingRef.current = false
+    seenIdsRef.current = new Set(initialItems.map((i) => i.id))
+    // initialKey 변화로 의존성 변경을 감지하므로 lint 경고는 의도적으로 무시합니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialKey, initialCursor])
 
   const fetchMore = useCallback(async () => {
     if (loadingRef.current) return
