@@ -128,7 +128,11 @@ export async function createComment(
     `<b>${escapeHtml(safeName)}</b>: ${escapeHtml(preview)}`,
     `<a href="${escapeHtml(url)}">글로 이동</a>`,
   ].join('\n')
-  await sendTelegram(msg)
+  // fire-and-forget: Telegram API가 느리거나 장애일 때(최대 5s) 사용자 응답을 막지 않습니다.
+  // sendTelegram 내부에서 이미 모든 예외를 흡수하지만, 방어적으로 .catch도 둡니다.
+  void sendTelegram(msg).catch((e) => {
+    console.warn('[createComment] telegram dispatch failed', e)
+  })
 
   return {
     ok: true,

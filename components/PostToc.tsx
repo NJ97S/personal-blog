@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 type Heading = { id: string; text: string; level: number }
 
@@ -8,6 +9,10 @@ export default function PostToc() {
   const [headings, setHeadings] = useState<Heading[]>([])
   const [activeId, setActiveId] = useState<string>('')
   const navRef = useRef<HTMLElement>(null)
+  // 동일 라우트 패턴(/posts/[slug]) 사이 SPA 전환 시 컴포넌트가 재사용되며
+  // 빈 deps 효과는 다시 실행되지 않습니다. pathname을 deps에 넣어 다른 글로
+  // 이동했을 때도 목차를 새로 수집합니다.
+  const pathname = usePathname()
 
   useEffect(() => {
     const article = document.querySelector('article')
@@ -24,6 +29,7 @@ export default function PostToc() {
       }))
 
     setHeadings(collected)
+    setActiveId('')
 
     if (collected.length === 0) return
 
@@ -43,7 +49,7 @@ export default function PostToc() {
     })
 
     return () => observer.disconnect()
-  }, [])
+  }, [pathname])
 
   useEffect(() => {
     const nav = navRef.current
