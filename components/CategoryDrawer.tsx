@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { CategoryNode } from '@/lib/category-tree'
 import CategoryTree from './CategoryTree'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 
 type Props = {
   tree: CategoryNode[]
@@ -12,6 +13,8 @@ type Props = {
 export default function CategoryDrawer({ tree }: Props) {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  // 드로어가 열려있는 동안 포커스를 가두고 닫힘 시 트리거 버튼으로 복원합니다.
+  const drawerRef = useFocusTrap<HTMLDivElement>(open)
 
   useEffect(() => {
     setMounted(true)
@@ -32,6 +35,7 @@ export default function CategoryDrawer({ tree }: Props) {
 
   const drawer = (
     <div
+      ref={drawerRef}
       role="dialog"
       aria-modal={open}
       aria-label="카테고리"
