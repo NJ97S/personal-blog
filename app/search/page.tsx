@@ -64,9 +64,14 @@ export default async function SearchPage({
       .select('id, title, slug, excerpt, tags, created_at, cover_image')
       .eq('visibility', 'public')
 
-    // 다중 토큰 AND 매칭: 각 토큰이 (title OR excerpt) 중 하나에 매치되어야 함
+    // 다중 토큰 AND 매칭: 각 토큰이 (title OR excerpt) 중 하나에 매치되어야 함.
+    // PostgreSQL LIKE 메타문자(%, _, \)는 이스케이프하여 패턴 인젝션을 차단합니다.
+    // (sanitize()는 PostgREST 필터 문법 문자를 제거하지만 LIKE 메타문자는 보존되므로
+    //  여기서 한 번 더 방어합니다.)
+    const escapeLike = (s: string) => s.replace(/[%_\\]/g, '\\$&')
     for (const t of terms) {
-      builder = builder.or(`title.ilike.%${t}%,excerpt.ilike.%${t}%`)
+      const e = escapeLike(t)
+      builder = builder.or(`title.ilike.%${e}%,excerpt.ilike.%${e}%`)
     }
 
     const { data } = await builder

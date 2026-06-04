@@ -13,6 +13,13 @@ function escapeXml(input: string): string {
     .replace(/'/g, '&apos;')
 }
 
+// CDATA 종료 시퀀스(`]]>`)가 본문에 들어오면 CDATA 블록을 조기 종료시켜
+// XML 파서를 깨뜨릴 수 있습니다. 종료 시퀀스만 분할하여 의미는 보존하면서
+// 내부 데이터가 CDATA를 빠져나가지 못하도록 만듭니다.
+function escapeCdata(input: string): string {
+  return input.replace(/]]>/g, ']]]]><![CDATA[>')
+}
+
 export async function GET() {
   const supabase = createClient()
   const { data: posts } = await supabase
@@ -26,11 +33,11 @@ export async function GET() {
     .map((p) => {
       const url = `${site.url}/posts/${encodeURI(p.slug)}`
       return `    <item>
-      <title><![CDATA[${p.title}]]></title>
+      <title><![CDATA[${escapeCdata(p.title)}]]></title>
       <link>${url}</link>
       <guid isPermaLink="true">${url}</guid>
       <pubDate>${new Date(p.created_at).toUTCString()}</pubDate>
-      <description><![CDATA[${p.excerpt ?? ''}]]></description>
+      <description><![CDATA[${escapeCdata(p.excerpt ?? '')}]]></description>
     </item>`
     })
     .join('\n')

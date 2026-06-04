@@ -31,6 +31,10 @@ export async function sendTelegram(text: string): Promise<boolean> {
   }
 }
 
+// HTML parse_mode 메시지에서 텍스트 노드뿐 아니라 `href="..."` 같은
+// 속성 컨텍스트에도 동일 함수가 사용되므로 따옴표까지 모두 이스케이프합니다.
 export function escapeHtml(s: string): string {
-  return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
+  return s.replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  )
 }
