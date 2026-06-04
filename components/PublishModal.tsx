@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X, Globe, Lock, Upload } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 
 const EXCERPT_MAX = 150
 const MAX_COVER_BYTES = 5 * 1024 * 1024
@@ -36,6 +37,8 @@ export default function PublishModal({
   const [coverImage, setCoverImage] = useState(defaultCoverImage)
   const [uploading, setUploading] = useState(false)
   const [coverError, setCoverError] = useState<string | null>(null)
+  // 모달이 열려있는 동안 포커스를 다이얼로그 내부에 가두고, 닫힘 시 트리거로 복원합니다.
+  const dialogRef = useFocusTrap<HTMLDivElement>(open)
 
   useEffect(() => {
     if (!open) return
@@ -93,6 +96,7 @@ export default function PublishModal({
         }`}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-hidden={!open}

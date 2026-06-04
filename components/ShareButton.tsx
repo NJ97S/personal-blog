@@ -1,18 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link2, Check } from 'lucide-react'
 
 export default function ShareButton() {
   const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   const onClick = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      // 빠른 연속 클릭 시 이전 타이머가 살아있으면 정리합니다.
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => {
+        setCopied(false)
+        timerRef.current = null
+      }, 1500)
     } catch {
-      // noop
+      // 클립보드 권한 거부 등 — 사용자에게 알리지 않는 정책 유지.
     }
   }
 
