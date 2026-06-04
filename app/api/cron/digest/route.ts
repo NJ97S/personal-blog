@@ -1,13 +1,36 @@
+import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendTelegram, escapeHtml } from '@/lib/telegram'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+// Vercel 함수 최대 실행 시간을 명시. Hobby 플랜에서도 30s까지 허용되며,
+// 24시간 윈도우 쿼리/Telegram 발송이 평소 수 초 안에 끝나므로 충분합니다.
+export const maxDuration = 30
+
+// 24시간 윈도우에서 합리적으로 다이제스트할 수 있는 상한.
+// 그보다 많은 경우 절단되어도 다이제스트의 본질은 손상되지 않습니다.
+const MAX_VIEWS = 10_000
+const MAX_COMMENTS = 1_000
+
+function safeBearerEqual(received: string | null): boolean {
+  const secret = process.env.CRON_SECRET
+  if (!received || !secret) return false
+  const expected = `Bearer ${secret}`
+  const a = Buffer.from(received)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) {
+    // 길이 정보 노출 자체는 secret을 깨기에 충분하지 않으나,
+    // 더미 비교로 타이밍 패턴을 균일하게 유지합니다.
+    timingSafeEqual(a, a)
+    return false
+  }
+  return timingSafeEqual(a, b)
+}
 
 export async function GET(req: Request) {
-  const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!safeBearerEqual(req.headers.get('authorization'))) {
     return new NextResponse('unauthorized', { status: 401 })
   }
 
@@ -20,7 +43,7 @@ export async function GET(req: Request) {
     supabase = createAdminClient()
   } catch (e) {
     console.error('[digest] admin client init failed', e)
-    return NextResponse.json({ ok: false, error: 'admin client unavailable' }, { status: 500 })
+    return NextResponse.json({ ok: false }, { status: 500 })
   }
 
   const [commentsRes, viewsRes] = await Promise.all([
@@ -28,12 +51,17 @@ export async function GET(req: Request) {
       .from('comments')
       .select('author_name, content, created_at, post_id, posts(title, slug)')
       .gte('created_at', sinceIso)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(MAX_COMMENTS),
     supabase
       .from('post_views')
       .select('post_id, posts(title, slug)')
-      .gte('viewed_at', sinceIso),
+      .gte('viewed_at', sinceIso)
+      .limit(MAX_VIEWS),
   ])
+
+  if (commentsRes.error) console.warn('[digest] comments query failed', commentsRes.error)
+  if (viewsRes.error) console.warn('[digest] views query failed', viewsRes.error)
 
   const comments = commentsRes.data ?? []
   const views = viewsRes.data ?? []
@@ -89,5 +117,7 @@ export async function GET(req: Request) {
   }
 
   await sendTelegram(lines.join('\n'))
-  return NextResponse.json({ ok: true, totalPV, commentCount, topCount: top.length })
+  // 통계는 서버 로그로만 남기고, 외부 응답에는 노출하지 않습니다.
+  console.info('[digest] dispatched', { totalPV, commentCount, top: top.length })
+  return NextResponse.json({ ok: true })
 }
