@@ -6,6 +6,10 @@ import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { site } from '@/lib/site'
 import { FEED_PAGE_SIZE, type FeedItem } from '@/lib/feed'
 
+// 홈 피드는 1분 간격 ISR. 발행/수정 시 revalidatePath('/')가 즉시 무효화하므로
+// 신규 글 지연이 사실상 0이며, 매 요청 Supabase 왕복을 제거해 TTFB가 줄어듭니다.
+export const revalidate = 60
+
 export default async function Home() {
   const supabase = createClient()
 
