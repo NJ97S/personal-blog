@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -16,6 +17,33 @@ import { trackView } from '@/app/actions/views'
 
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
+
+// 요청 단위 dedup: generateMetadata와 PostPage가 같은 슬러그에 대해
+// 각각 auth + 프로필 + 글 조회를 따로 수행하던 워터폴을 1회로 줄입니다.
+const loadPostForSlug = cache(async (slug: string) => {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  let isAdmin = false
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+    isAdmin = !!profile?.is_admin
+  }
+  let q = supabase
+    .from('posts')
+    .select(
+      'id, title, slug, content, excerpt, tags, visibility, cover_image, created_at, updated_at, category_id',
+    )
+    .eq('slug', slug)
+  if (!isAdmin) q = q.eq('visibility', 'public')
+  const { data: post } = await q.maybeSingle()
+  return { post, isAdmin }
+})
 
 function formatDate(iso: string) {
   try {
@@ -39,14 +67,8 @@ function decodeSlug(raw: string): string {
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const supabase = createClient()
   const slug = decodeSlug(params.slug)
-  const { data: post } = await supabase
-    .from('posts')
-    .select('title, excerpt, tags, cover_image, created_at, updated_at')
-    .eq('slug', slug)
-    .eq('visibility', 'public')
-    .maybeSingle()
+  const { post } = await loadPostForSlug(slug)
 
   if (!post) return { title: '글을 찾을 수 없습니다' }
 
@@ -86,36 +108,20 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const supabase = createClient()
   const slug = decodeSlug(params.slug)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  let isAdmin = false
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .maybeSingle()
-    isAdmin = !!profile?.is_admin
-  }
-
-  let postQuery = supabase
-    .from('posts')
-    .select(
-      'id, title, slug, content, excerpt, tags, visibility, cover_image, created_at, updated_at, category_id',
-    )
-    .eq('slug', slug)
-  if (!isAdmin) postQuery = postQuery.eq('visibility', 'public')
-
-  const [{ data: post }, tree] = await Promise.all([
-    postQuery.maybeSingle(),
+  // generateMetadata와 동일 호출이지만 React cache()가 한 요청 내에서 dedup합니다.
+  const [{ post, isAdmin }, tree] = await Promise.all([
+    loadPostForSlug(slug),
     fetchCategoryTree(),
   ])
 
   if (!post) notFound()
 
   if (!isAdmin && post.visibility === 'public') {
-    await trackView(post.id)
+    // fire-and-forget: 조회수 트래킹이 페이지 렌더링을 막지 않도록 합니다.
+    // 트래킹 실패는 사용자 경험에 영향이 없으며 내부 로그로만 남깁니다.
+    void trackView(post.id).catch((e) => {
+      console.warn('[trackView] failed', e)
+    })
   }
 
   const flatNodes = walkTree(tree)
@@ -295,7 +301,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
           >
             {prevPost ? (
               <Link
-                href={`/posts/${prevPost.slug}`}
+                href={`/posts/${encodeURIComponent(prevPost.slug)}`}
                 className="craft-card p-4 flex items-center gap-3 hover:bg-craft-100 dark:hover:bg-ink-800"
               >
                 <ArrowLeft className="h-5 w-5 shrink-0 text-ink-500 dark:text-craft-200" aria-hidden />
@@ -309,7 +315,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
             )}
             {nextPost ? (
               <Link
-                href={`/posts/${nextPost.slug}`}
+                href={`/posts/${encodeURIComponent(nextPost.slug)}`}
                 className="craft-card p-4 flex items-center justify-end gap-3 text-right hover:bg-craft-100 dark:hover:bg-ink-800"
               >
                 <div className="min-w-0">
