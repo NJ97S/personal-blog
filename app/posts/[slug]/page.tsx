@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
   if (!post) return { title: '글을 찾을 수 없습니다' }
 
-  const canonicalPath = `/posts/${encodeURI(slug)}`
+  const canonicalPath = `/posts/${encodeURIComponent(slug)}`
   const description = post.excerpt ?? site.description
   const images = post.cover_image ? [{ url: post.cover_image }] : undefined
 
@@ -158,7 +158,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
       ? seriesPosts[currentIdx + 1]
       : null
 
-  const postUrl = `${site.url}/posts/${encodeURI(slug)}`
+  const postUrl = `${site.url}/posts/${encodeURIComponent(slug)}`
 
   const articleSchema = {
     '@context': 'https://schema.org',

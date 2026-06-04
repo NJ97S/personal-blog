@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CategoryNode } from '@/lib/categories'
 
 type Props = {
@@ -58,6 +58,11 @@ function TreeNode({
   const isOnActivePath = activePath[depth] === node.slug
   const isExactActive = isOnActivePath && activePath.length === depth + 1
   const [open, setOpen] = useState(isOnActivePath || depth === 0)
+  // SPA 전환으로 activePath가 바뀌면, 활성 경로에 새로 들어온 노드는 자동으로 펼칩니다.
+  // 사용자가 명시적으로 접은 노드는 활성 경로에서 빠질 때 그대로 두어 토글 의도를 존중합니다.
+  useEffect(() => {
+    if (isOnActivePath) setOpen(true)
+  }, [isOnActivePath])
   const hasChildren = node.children.length > 0
   const href = `/categories/${node.path.map(encodeURIComponent).join('/')}`
 

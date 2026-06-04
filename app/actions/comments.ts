@@ -122,7 +122,7 @@ export async function createComment(
   const previewLen = 120
   const preview =
     safeContent.length > previewLen ? safeContent.slice(0, previewLen) + '…' : safeContent
-  const url = `${site.url}/posts/${encodeURI(postSlug)}`
+  const url = `${site.url}/posts/${encodeURIComponent(postSlug)}`
   const msg = [
     `💬 <b>새 댓글</b> — ${escapeHtml(post.title)}`,
     `<b>${escapeHtml(safeName)}</b>: ${escapeHtml(preview)}`,
