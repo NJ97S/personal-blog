@@ -31,7 +31,7 @@ export async function GET() {
 
   const items = (posts ?? [])
     .map((p) => {
-      const url = `${site.url}/posts/${encodeURI(p.slug)}`
+      const url = `${site.url}/posts/${encodeURIComponent(p.slug)}`
       return `    <item>
       <title><![CDATA[${escapeCdata(p.title)}]]></title>
       <link>${url}</link>
