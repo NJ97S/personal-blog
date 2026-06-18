@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import ThemeToggle from './ThemeToggle'
 import CategoryDrawer from './CategoryDrawer'
+import Logo from './Logo'
 import { fetchCategoryTree } from '@/lib/categories'
 
 export default async function Header() {
@@ -10,9 +10,7 @@ export default async function Header() {
       <div className="mx-auto max-w-[1440px] px-4 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <CategoryDrawer tree={tree} />
-          <Link href="/" className="text-xl font-serif font-bold tracking-tight">
-            ShyLog
-          </Link>
+          <Logo />
         </div>
         <nav className="flex items-center gap-4 text-sm">
           <ThemeToggle />
