@@ -37,4 +37,5 @@ next-env.d.ts
 
 # tooling state
 .omc/
-.claude/settings.local.json
+# Claude Code local workflow skills — kept local, not committed
+.claude/

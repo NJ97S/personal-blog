@@ -1,0 +1,9 @@
+# Transient run artifacts — not worth committing.
+tmp/
+.review-result.json
+
+# HTML is a derived view rendered from Markdown by bin/render-doc.sh — regenerate
+# anytime; never committed. Markdown under docs/ is the committed source of truth.
+docs/**/*.html
+
+# Committed by design: docs/**/*.md (epic + issue history), bin/, README.md
