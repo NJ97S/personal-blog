@@ -56,14 +56,14 @@ export default function TagInput({
       {tags.map((tag, idx) => (
         <span
           key={`${tag}-${idx}`}
-          className="inline-flex items-center gap-1 rounded-full bg-craft-100 dark:bg-ink-800 px-2.5 py-1 text-xs text-ink-800 dark:text-craft-100"
+          className="inline-flex min-h-10 items-center gap-1 rounded-full bg-craft-100 px-2.5 py-1 text-xs text-ink-800 dark:bg-ink-800 dark:text-craft-100 sm:min-h-0"
         >
           <span>{tag}</span>
           <button
             type="button"
             onClick={() => removeAt(idx)}
             aria-label={`태그 ${tag} 제거`}
-            className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-craft-200 dark:hover:bg-ink-600"
+            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-craft-200 dark:hover:bg-ink-600 sm:h-4 sm:w-4"
           >
             <X className="h-3 w-3" aria-hidden />
           </button>
