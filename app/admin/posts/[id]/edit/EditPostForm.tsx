@@ -155,17 +155,17 @@ export default function EditPostForm({
             <button
               type="button"
               onClick={onExit}
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 px-3 py-1.5 text-sm text-ink-600 hover:text-ink-900 dark:text-craft-100 dark:hover:text-craft-50 sm:min-h-0 sm:justify-start"
+              className="order-2 inline-flex min-h-11 shrink-0 items-center justify-start gap-1.5 px-3 py-1.5 text-sm text-ink-600 hover:text-ink-900 dark:text-craft-100 dark:hover:text-craft-50 sm:order-none sm:min-h-0"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
               나가기
             </button>
-            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-              {errorMsg && (
-                <p className="w-full text-right text-xs text-red-600 dark:text-red-400 sm:w-auto sm:text-sm">
-                  {errorMsg}
-                </p>
-              )}
+            {errorMsg && (
+              <p className="order-1 w-full text-right text-xs text-red-600 dark:text-red-400 sm:order-none sm:ml-auto sm:w-auto sm:text-sm">
+                {errorMsg}
+              </p>
+            )}
+            <div className="order-3 flex shrink-0 flex-wrap items-center justify-end gap-2 sm:order-none sm:gap-3">
               <DraftButton ref={draftBtnRef} ready={hydrated} />
               <button
                 type="button"
