@@ -216,7 +216,7 @@ function TreeRow({
   return (
     <>
       <li
-        className="flex items-center gap-2 px-3 py-2"
+        className="flex flex-wrap items-start gap-x-2 gap-y-2 px-3 py-2 md:flex-nowrap md:items-center"
         style={{ paddingLeft: 12 + depth * 20 }}
       >
         {editing ? (
@@ -236,8 +236,8 @@ function TreeRow({
           </div>
         ) : (
           <>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm">
+            <div className="min-w-0 flex-1 basis-full md:basis-auto">
+              <p className="break-words text-sm">
                 <span className="font-bold">{node.name}</span>
                 <span className="ml-2 text-xs font-mono text-ink-400">
                   /{node.slug}
@@ -249,7 +249,7 @@ function TreeRow({
                 )}
               </p>
             </div>
-            <div className="flex items-center gap-1 text-ink-500 dark:text-craft-200">
+            <div className="ml-auto flex items-center gap-1 text-ink-500 dark:text-craft-200">
               <IconButton
                 aria-label="위로"
                 disabled={pending}
@@ -296,7 +296,7 @@ function IconButton({
   return (
     <button
       type="button"
-      className={`flex h-7 w-7 items-center justify-center rounded-sm hover:bg-craft-100 dark:hover:bg-ink-800 disabled:opacity-40 ${className}`}
+      className={`flex h-11 w-11 items-center justify-center rounded-sm hover:bg-craft-100 dark:hover:bg-ink-800 disabled:opacity-40 md:h-7 md:w-7 ${className}`}
       {...rest}
     >
       {children}
