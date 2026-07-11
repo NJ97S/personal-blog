@@ -359,10 +359,16 @@ function createController(root: HTMLElement, initialValue: string) {
 export function useMarkdownScrollSync(
   rootRef: RefObject<HTMLElement | null>,
   value: string,
+  enabled = true,
 ) {
   const controllerRef = useRef<ReturnType<typeof createController> | null>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      controllerRef.current?.destroy()
+      controllerRef.current = null
+      return
+    }
     if (!rootRef.current) return
     const controller = createController(rootRef.current, value)
     controllerRef.current = controller
@@ -373,9 +379,10 @@ export function useMarkdownScrollSync(
     // Run once: the controller observes DOM mount itself; value updates flow
     // through the effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rootRef])
+  }, [rootRef, enabled])
 
   useEffect(() => {
+    if (!enabled) return
     controllerRef.current?.onValueChange(value)
-  }, [value])
+  }, [enabled, value])
 }
