@@ -42,9 +42,9 @@ export default async function AdminPostsPage({
 
   return (
     <Layout>
-      <header className="flex items-center justify-between mb-6">
+      <header className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-serif font-bold">글 관리</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             href="/admin/categories"
             className="craft-card px-4 py-2 text-sm hover:bg-craft-100 dark:hover:bg-ink-800"
@@ -68,7 +68,7 @@ export default async function AdminPostsPage({
         </div>
       </header>
 
-      <nav className="flex gap-3 text-sm mb-6">
+      <nav className="flex flex-wrap gap-3 text-sm mb-6">
         {tabs.map((tab) => (
           <Link
             key={tab.key}
@@ -88,16 +88,16 @@ export default async function AdminPostsPage({
               key={post.id}
               className="craft-card p-4 flex items-center justify-between gap-3"
             >
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-baseline gap-2">
                   <Link
                     href={`/posts/${post.slug}`}
-                    className="font-serif font-bold truncate hover:underline"
+                    className="min-w-0 truncate font-serif font-bold hover:underline"
                   >
                     {post.title}
                   </Link>
                   {visibility !== 'public' && (
-                    <span className="text-xs text-ink-400 border border-craft-200 dark:border-ink-600 px-2 py-0.5 rounded-sm">
+                    <span className="shrink-0 text-xs text-ink-400 border border-craft-200 dark:border-ink-600 px-2 py-0.5 rounded-sm">
                       {STATUS_LABEL[visibility]}
                     </span>
                   )}
@@ -106,7 +106,7 @@ export default async function AdminPostsPage({
               </div>
               <Link
                 href={`/admin/posts/${post.id}/edit`}
-                className="text-sm text-ink-400 hover:text-ink-900 dark:hover:text-craft-50"
+                className="shrink-0 text-sm text-ink-400 hover:text-ink-900 dark:hover:text-craft-50"
               >
                 편집
               </Link>
