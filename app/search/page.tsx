@@ -1,6 +1,7 @@
 import Layout from '@/components/Layout'
 import PostCard from '@/components/PostCard'
 import { createClient } from '@/lib/supabase/server'
+import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -55,13 +56,18 @@ export default async function SearchPage({
     tags: string[] | null
     created_at: string
     cover_image: string | null
+    category_id: string | null
   }> = []
+  let categoryById = new Map<
+    string,
+    { name: string; path: string[] }
+  >()
 
   if (q && !tooShort && terms.length > 0) {
     const supabase = createClient()
     let builder = supabase
       .from('posts')
-      .select('id, title, slug, excerpt, tags, created_at, cover_image')
+      .select('id, title, slug, excerpt, tags, created_at, cover_image, category_id')
       .eq('visibility', 'public')
 
     // 다중 토큰 AND 매칭: 각 토큰이 (title OR excerpt) 중 하나에 매치되어야 함.
@@ -74,10 +80,17 @@ export default async function SearchPage({
       builder = builder.or(`title.ilike.%${e}%,excerpt.ilike.%${e}%`)
     }
 
-    const { data } = await builder
-      .order('created_at', { ascending: false })
-      .limit(50)
+    const [{ data }, tree] = await Promise.all([
+      builder.order('created_at', { ascending: false }).limit(50),
+      fetchCategoryTree(),
+    ])
     posts = data ?? []
+    categoryById = new Map(
+      walkTree(tree).map((node) => [
+        node.id,
+        { name: node.name, path: node.path },
+      ]),
+    )
   }
 
   return (
@@ -98,18 +111,22 @@ export default async function SearchPage({
       </section>
 
       <div className="space-y-4">
-        {posts.map((p) => (
-          <PostCard
-            key={p.id}
-            id={p.id}
-            title={p.title}
-            slug={p.slug}
-            excerpt={p.excerpt}
-            tags={p.tags ?? []}
-            created_at={p.created_at}
-            coverImage={p.cover_image}
-          />
-        ))}
+        {posts.map((p) => {
+          const category = p.category_id ? categoryById.get(p.category_id) : undefined
+          return (
+            <PostCard
+              key={p.id}
+              id={p.id}
+              title={p.title}
+              slug={p.slug}
+              excerpt={p.excerpt}
+              tags={p.tags ?? []}
+              created_at={p.created_at}
+              coverImage={p.cover_image}
+              category={category ?? null}
+            />
+          )
+        })}
         {q && !tooShort && posts.length === 0 && (
           <p className="craft-card p-4 text-sm text-ink-400">검색 결과가 없습니다.</p>
         )}

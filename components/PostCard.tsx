@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { resolvePostThumbnail } from '@/lib/category-thumbnails'
 
 export type PostCardProps = {
   id: string
@@ -39,6 +40,7 @@ export default function PostCard({
   const categoryHref = category
     ? `/categories/${category.path.map(encodeURIComponent).join('/')}`
     : null
+  const thumbnail = resolvePostThumbnail(coverImage, category?.path)
 
   return (
     <article className="craft-card overflow-hidden transition-shadow hover:shadow-sm">
@@ -49,9 +51,9 @@ export default function PostCard({
           tabIndex={-1}
           className="hidden sm:block shrink-0 w-[140px] aspect-square relative bg-craft-100 dark:bg-ink-800/60 overflow-hidden"
         >
-          {coverImage ? (
+          {thumbnail ? (
             <Image
-              src={coverImage}
+              src={thumbnail}
               alt=""
               fill
               sizes="140px"

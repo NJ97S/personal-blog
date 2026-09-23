@@ -12,6 +12,7 @@ import JsonLd from '@/components/JsonLd'
 import MarkdownView from '@/components/MarkdownView'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
+import { resolvePostThumbnail } from '@/lib/category-thumbnails'
 import { site } from '@/lib/site'
 import { trackView } from '@/app/actions/views'
 
@@ -68,13 +69,20 @@ function decodeSlug(raw: string): string {
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const slug = decodeSlug(params.slug)
-  const { post } = await loadPostForSlug(slug)
+  const [{ post }, tree] = await Promise.all([
+    loadPostForSlug(slug),
+    fetchCategoryTree(),
+  ])
 
   if (!post) return { title: '글을 찾을 수 없습니다' }
 
   const canonicalPath = `/posts/${encodeURIComponent(slug)}`
   const description = post.excerpt ?? site.description
-  const images = post.cover_image ? [{ url: post.cover_image }] : undefined
+  const categoryPath = post.category_id
+    ? walkTree(tree).find((node) => node.id === post.category_id)?.path
+    : undefined
+  const thumbnail = resolvePostThumbnail(post.cover_image, categoryPath)
+  const images = thumbnail ? [{ url: thumbnail }] : undefined
 
   return {
     title: post.title,
@@ -99,7 +107,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       card: 'summary_large_image',
       title: post.title,
       description,
-      images: post.cover_image ? [post.cover_image] : undefined,
+      images: thumbnail ? [thumbnail] : undefined,
     },
   }
 }
@@ -128,6 +136,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const categoryNode = post.category_id
     ? flatNodes.find((n) => n.id === post.category_id) ?? null
     : null
+  const thumbnail = resolvePostThumbnail(post.cover_image, categoryNode?.path)
   const ancestors = categoryNode
     ? categoryNode.path.map((slug, i) => {
         const path = categoryNode.path.slice(0, i + 1)
@@ -178,7 +187,9 @@ export default async function PostPage({ params }: { params: { slug: string } })
       url: site.author.url,
     },
     mainEntityOfPage: { '@type': 'WebPage', '@id': postUrl },
-    ...(post.cover_image ? { image: [post.cover_image] } : {}),
+    ...(thumbnail
+      ? { image: [new URL(thumbnail, site.url).toString()] }
+      : {}),
     ...(post.tags?.length ? { keywords: post.tags.join(', ') } : {}),
   }
 
@@ -277,11 +288,11 @@ export default async function PostPage({ params }: { params: { slug: string } })
           />
         )}
 
-        {post.cover_image && (
+        {thumbnail && (
           <figure className="mb-8 overflow-hidden rounded-lg border border-craft-200 dark:border-ink-600 bg-craft-100 dark:bg-ink-800/60">
             <div className="relative w-full aspect-[16/9]">
               <Image
-                src={post.cover_image}
+                src={thumbnail}
                 alt=""
                 fill
                 priority
