@@ -2,6 +2,7 @@ const CATEGORY_DEFAULT_THUMBNAILS_BY_SLUG: Readonly<Record<string, string>> = {
   translation: '/images/category-thumbnails/translation.png',
   'web-trends': '/images/category-thumbnails/web-trends.png',
   'ai-trends': '/images/category-thumbnails/ai-trends.png',
+  diary: '/images/category-thumbnails/diary.png',
 }
 
 /**
