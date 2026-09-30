@@ -22,8 +22,19 @@ export default function SeriesBox({ categoryName, posts, currentId }: Props) {
   const [open, setOpen] = useState(false)
   const currentIndex = posts.findIndex((p) => p.id === currentId)
   const canToggle = posts.length > PREVIEW_POST_COUNT
+  // 현재 글을 가운데에 두고, 목록 양 끝에서는 5개가 유지되도록 보정합니다.
+  const previewStart = Math.max(
+    0,
+    Math.min(
+      currentIndex - Math.floor(PREVIEW_POST_COUNT / 2),
+      posts.length - PREVIEW_POST_COUNT,
+    ),
+  )
+  const visibleStart = open || !canToggle ? 0 : previewStart
   const visiblePosts =
-    open || !canToggle ? posts : posts.slice(0, PREVIEW_POST_COUNT)
+    open || !canToggle
+      ? posts
+      : posts.slice(visibleStart, visibleStart + PREVIEW_POST_COUNT)
 
   return (
     <aside className="not-prose my-10 rounded-lg border border-craft-200 dark:border-ink-600 bg-craft-100/60 dark:bg-ink-800/40 relative overflow-hidden">
@@ -34,7 +45,10 @@ export default function SeriesBox({ categoryName, posts, currentId }: Props) {
       />
       <div className="p-5 pr-20">
         <h2 className="font-serif font-bold text-lg">{categoryName}</h2>
-        <ol className="mt-3 space-y-1.5 text-sm list-decimal list-inside">
+        <ol
+          start={visibleStart + 1}
+          className="mt-3 space-y-1.5 text-sm list-decimal list-inside"
+        >
           {visiblePosts.map((p) => {
             const active = p.id === currentId
             return (
