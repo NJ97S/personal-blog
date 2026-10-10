@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
+import remarkCjkFriendly from 'remark-cjk-friendly/parseOnly'
 import rehypeRaw from 'rehype-raw'
 import rehypeSlug from 'rehype-slug'
 import rehypeHighlight from 'rehype-highlight'
@@ -120,7 +121,9 @@ function rehypeSourceLine() {
   }
 }
 
-const remarkPlugins: PluggableList = [remarkGfm, remarkBreaks]
+// 괄호/문장 부호로 끝난 강조 뒤에 한글 조사가 붙어도 닫는 **를 인식합니다.
+// 파싱 단계에서 처리해 코드/이스케이프와 원본 위치(스크롤 동기화)를 보존합니다.
+const remarkPlugins: PluggableList = [remarkGfm, remarkCjkFriendly, remarkBreaks]
 const rehypePlugins: PluggableList = [
   rehypeRaw,
   rehypeSlug,
