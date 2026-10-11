@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes mobile-toc-enter {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-toc-sheet { animation: mobile-toc-enter 180ms ease-out; }
+}
+
 @layer base {
   html {
     @apply bg-craft-50 text-ink-900;

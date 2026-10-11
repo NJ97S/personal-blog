@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import MobilePostToc from '@/components/MobilePostToc'
 
 type Heading = { id: string; text: string; level: number }
 
@@ -33,22 +34,27 @@ export default function PostToc() {
 
     if (collected.length === 0) return
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top)
-        if (visible[0]) setActiveId(visible[0].target.id)
-      },
-      { rootMargin: '-80px 0px -70% 0px' },
-    )
-
-    collected.forEach((h) => {
-      const el = document.getElementById(h.id)
-      if (el) observer.observe(el)
-    })
-
-    return () => observer.disconnect()
+    const elements = collected.map((heading) => document.getElementById(heading.id))
+    let frame = 0
+    const syncActiveHeading = () => {
+      frame = 0
+      let currentId = collected[0].id
+      for (const element of elements) {
+        if (element && element.getBoundingClientRect().top <= 100) currentId = element.id
+      }
+      setActiveId(currentId)
+    }
+    const scheduleSync = () => {
+      if (!frame) frame = requestAnimationFrame(syncActiveHeading)
+    }
+    syncActiveHeading()
+    window.addEventListener('scroll', scheduleSync, { passive: true })
+    window.addEventListener('resize', scheduleSync)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', scheduleSync)
+      window.removeEventListener('resize', scheduleSync)
+    }
   }, [pathname])
 
   useEffect(() => {
@@ -73,32 +79,35 @@ export default function PostToc() {
   if (headings.length === 0) return null
 
   return (
-    <nav
-      ref={navRef}
-      aria-label="목차"
-      className="sticky top-24 text-sm max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-hidden"
-    >
-      <p className="font-serif font-bold mb-2 text-ink-900 dark:text-craft-50">목차</p>
-      <ul className="space-y-1 border-l border-craft-200 dark:border-ink-600">
-        {headings.map((h) => {
-          const active = h.id === activeId
-          return (
-            <li key={h.id}>
-              <a
-                href={`#${h.id}`}
-                style={{ paddingLeft: 12 + (h.level - 1) * 12 }}
-                className={`block py-1 pr-2 -ml-px border-l hover:text-ink-900 dark:hover:text-craft-50 ${
-                  active
-                    ? 'border-ink-900 dark:border-craft-50 text-ink-900 dark:text-craft-50 font-bold'
-                    : 'border-transparent text-ink-400'
-                }`}
-              >
-                {h.text}
-              </a>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
+    <>
+      <MobilePostToc headings={headings} activeId={activeId} pathname={pathname} />
+      <nav
+        ref={navRef}
+        aria-label="목차"
+        className="sticky top-24 text-sm max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-hidden"
+      >
+        <p className="font-serif font-bold mb-2 text-ink-900 dark:text-craft-50">목차</p>
+        <ul className="space-y-1 border-l border-craft-200 dark:border-ink-600">
+          {headings.map((h) => {
+            const active = h.id === activeId
+            return (
+              <li key={h.id}>
+                <a
+                  href={`#${h.id}`}
+                  style={{ paddingLeft: 12 + (h.level - 1) * 12 }}
+                  className={`block py-1 pr-2 -ml-px border-l hover:text-ink-900 dark:hover:text-craft-50 ${
+                    active
+                      ? 'border-ink-900 dark:border-craft-50 text-ink-900 dark:text-craft-50 font-bold'
+                      : 'border-transparent text-ink-400'
+                  }`}
+                >
+                  {h.text}
+                </a>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+    </>
   )
 }

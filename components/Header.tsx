@@ -1,6 +1,7 @@
 import ThemeToggle from './ThemeToggle'
 import CategoryDrawer from './CategoryDrawer'
 import Logo from './Logo'
+import MobileSearch from '@/components/MobileSearch'
 import { fetchCategoryTree } from '@/lib/categories'
 
 export default async function Header() {
@@ -12,7 +13,8 @@ export default async function Header() {
           <CategoryDrawer tree={tree} />
           <Logo />
         </div>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex items-center gap-2 text-sm sm:gap-4">
+          <MobileSearch />
           <ThemeToggle />
         </nav>
       </div>
