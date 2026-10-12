@@ -19,31 +19,56 @@ export default function TagInput({
   onDirty,
 }: Props) {
   const [tags, setTags] = useState<string[]>(defaultTags)
+  const tagsRef = useRef(tags)
   const [draft, setDraft] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const composingRef = useRef(false)
 
-  const addTag = (raw: string) => {
-    const t = raw.trim().replace(/,/g, '')
-    if (!t) return
-    if (tags.length >= MAX_TAGS) return
-    if (tags.some((existing) => existing.toLowerCase() === t.toLowerCase())) return
-    setTags((prev) => [...prev, t])
+  const addTags = (raw: string) => {
+    const next = [...tagsRef.current]
+    for (const part of raw.split(',')) {
+      const tag = part.trim()
+      if (!tag || next.length >= MAX_TAGS) continue
+      if (next.some((existing) => existing.toLowerCase() === tag.toLowerCase())) continue
+      next.push(tag)
+    }
+    if (next.length === tagsRef.current.length) return
+    tagsRef.current = next
+    setTags(next)
     onDirty?.()
   }
 
+  const updateDraft = (value: string) => {
+    // Mobile keyboards can insert commas without a usable keydown event.
+    const lastComma = value.lastIndexOf(',')
+    if (lastComma === -1) {
+      setDraft(value)
+      return
+    }
+    addTags(value.slice(0, lastComma))
+    setDraft(value.slice(lastComma + 1))
+  }
+
+  const commitDraft = (value: string) => {
+    addTags(value)
+    setDraft('')
+  }
+
   const removeAt = (idx: number) => {
-    setTags((prev) => prev.filter((_, i) => i !== idx))
+    const next = tagsRef.current.filter((_, i) => i !== idx)
+    tagsRef.current = next
+    setTags(next)
     onDirty?.()
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.nativeEvent.isComposing || e.keyCode === 229) return
-    if (e.key === 'Enter' || e.key === ',') {
+    if (composingRef.current || e.nativeEvent.isComposing) return
+    if (e.key === 'Enter') {
       e.preventDefault()
-      addTag(draft)
-      setDraft('')
+      commitDraft(e.currentTarget.value)
       return
     }
+    if (e.keyCode === 229) return
     if (e.key === 'Backspace' && draft === '' && tags.length > 0) {
       e.preventDefault()
       removeAt(tags.length - 1)
@@ -73,12 +98,39 @@ export default function TagInput({
         ref={inputRef}
         type="text"
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => {
+          if (composingRef.current || (e.nativeEvent as InputEvent).isComposing) {
+            setDraft(e.target.value)
+          } else {
+            updateDraft(e.target.value)
+          }
+        }}
+        onCompositionStart={() => { composingRef.current = true }}
+        onCompositionEnd={(e) => {
+          composingRef.current = false
+          updateDraft(e.currentTarget.value)
+        }}
+        onBlur={(e) => {
+          composingRef.current = false
+          commitDraft(e.currentTarget.value)
+        }}
         onKeyDown={onKeyDown}
+        enterKeyHint="done"
         placeholder={tags.length === 0 ? placeholder : ''}
         aria-label="태그 입력"
         className="flex-1 min-w-[180px] bg-transparent py-1 text-sm outline-none placeholder:text-ink-400"
       />
+      <button
+        type="button"
+        onClick={() => {
+          commitDraft(inputRef.current?.value ?? draft)
+          inputRef.current?.focus()
+        }}
+        className="min-h-10 rounded-md border border-craft-200 px-3 text-sm text-ink-700 hover:bg-craft-100 dark:border-ink-600 dark:text-craft-100 dark:hover:bg-ink-800"
+        aria-label="태그 추가"
+      >
+        추가
+      </button>
     </div>
   )
 }
