@@ -54,9 +54,6 @@
 .craft-prose blockquote {
   @apply my-6 rounded-r-lg border-l-4 border-craft-400 dark:border-craft-300 bg-craft-100 dark:bg-ink-800/50 px-5 py-4 not-italic;
 }
-.craft-prose blockquote p {
-  @apply my-0;
-}
 .craft-prose blockquote p::before,
 .craft-prose blockquote p::after {
   content: '' !important;
@@ -69,7 +66,6 @@
   padding: 1rem 1.25rem !important;
   border-radius: 0.5rem !important;
   overflow-x: auto !important;
-  margin: 1.5rem 0 !important;
 }
 .craft-prose pre code,
 .craft-prose pre code.hljs {
@@ -96,6 +92,43 @@
 .craft-prose :not(pre) > code::after {
   content: '' !important;
 }
+
+/* One block-spacing rule instead of element-specific typography defaults.
+   Inline <br> still uses the normal line height; standalone blank lines must
+   not also inherit paragraph/list/code margins. */
+.craft-prose { --craft-block-gap: 1.25rem; }
+.craft-prose-compact { --craft-block-gap: 1.09375rem; }
+.craft-prose :where(p, ul, ol, pre, table),
+.craft-prose blockquote {
+  margin-block: var(--craft-block-gap);
+}
+.craft-prose :where(h1, h2, h3, h4, h5, h6) {
+  margin-top: 2em;
+  margin-bottom: 0.75em;
+}
+.craft-prose :is(h1, h2, h3, h4, h5, h6) + * {
+  margin-top: 0;
+}
+.craft-prose li > :where(p, ul, ol) {
+  margin-block: 0.5em;
+}
+.craft-prose :where(ul, ol) > li:first-child { margin-top: 0; }
+.craft-prose :where(ul, ol) > li:last-child { margin-bottom: 0; }
+.craft-prose blockquote > :first-child,
+.craft-prose li > :first-child {
+  margin-top: 0;
+}
+.craft-prose blockquote > :last-child,
+.craft-prose li > :last-child {
+  margin-bottom: 0;
+}
+.craft-prose .markdown-blank-line { margin-block: 0; }
+.craft-prose .markdown-blank-line + * { margin-top: 0; }
+.craft-prose :has(+ .markdown-blank-line) {
+  margin-bottom: 0;
+}
+.craft-prose > :first-child { margin-top: 0; }
+.craft-prose > :last-child { margin-bottom: 0; }
 
 /* Markdown editor live preview: match left editor's compact size */
 .craft-prose-compact {

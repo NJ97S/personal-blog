@@ -91,12 +91,46 @@ const sanitizeSchema = {
 // Mirrors the subset of node fields we actually inspect.
 type HastNode = {
   type: string
+  tagName?: string
+  value?: string
   position?: {
     start?: { line?: number }
     end?: { line?: number }
   }
   properties?: Record<string, unknown>
   children?: HastNode[]
+}
+
+// A standalone <br> is an explicit blank line, not a paragraph with its own
+// margins. Raw HTML may leave it directly at the root (e.g. after a list).
+function rehypeBlankLines() {
+  return (tree: HastNode) => {
+    const walk = (node: HastNode) => {
+      if (node.tagName === 'pre' || node.tagName === 'code') return
+      if (node.type === 'root' && node.children) {
+        node.children = node.children.map((child) =>
+          child.tagName === 'br'
+            ? {
+                type: 'element', tagName: 'p', properties: {},
+                position: child.position, children: [child],
+              }
+            : child,
+        )
+      }
+      if (
+        node.tagName === 'p' &&
+        node.children?.some((child) => child.tagName === 'br') &&
+        node.children.every((child) =>
+          child.tagName === 'br' ||
+          (child.type === 'text' && !child.value?.trim()),
+        )
+      ) {
+        node.properties = { ...node.properties, className: ['markdown-blank-line'] }
+      }
+      node.children?.forEach(walk)
+    }
+    walk(tree)
+  }
 }
 
 // Stamp each rendered element with the markdown source line it originates from.
@@ -131,6 +165,7 @@ const rehypePlugins: PluggableList = [
   // 명시되지 않은 코드 블록은 plain text로 렌더되어 잘못된 감지를 막습니다.
   [rehypeHighlight, { languages: hljsLanguages, subset: false, ignoreMissing: true }],
   [rehypeSanitize, sanitizeSchema],
+  rehypeBlankLines,
 ]
 const rehypePluginsAnnotated: PluggableList = [...rehypePlugins, rehypeSourceLine]
 
