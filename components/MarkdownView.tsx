@@ -196,6 +196,15 @@ export default function MarkdownView({
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
         rehypePlugins={annotateLines ? rehypePluginsAnnotated : rehypePlugins}
+        components={{
+          table({ node, ...props }) {
+            return (
+              <div className="markdown-table-wrapper">
+                <table {...props} />
+              </div>
+            )
+          },
+        }}
       >
         {content}
       </ReactMarkdown>
