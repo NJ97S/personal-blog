@@ -1,3 +1,4 @@
+import { getPostViewCounts } from '@/lib/views'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
@@ -70,10 +71,13 @@ export default async function CategoryPage({ params }: { params: Params }) {
   const visible = hasMore ? posts.slice(0, FEED_PAGE_SIZE) : posts
 
   const categoryById = new Map(all.map((n) => [n.id, n] as const))
+  const viewCounts = await getPostViewCounts(visible.map((row) => row.id))
+
   const initialItems: FeedItem[] = visible.map((row) => {
     const cat = row.category_id ? categoryById.get(row.category_id) : undefined
     return {
       id: row.id,
+      view_count: viewCounts.get(row.id),
       title: row.title,
       slug: row.slug,
       excerpt: row.excerpt,

@@ -1,3 +1,4 @@
+import BlogViewStats from '@/components/BlogViewStats'
 import Image from 'next/image'
 import { Folder, Mail } from 'lucide-react'
 import { fetchCategoryTree } from '@/lib/categories'
@@ -47,6 +48,9 @@ export default async function CategorySidebar() {
               </span>
             </a>
           </div>
+        </div>
+        <div className="mt-4 border-t border-craft-200 pt-4 dark:border-ink-600">
+          <BlogViewStats variant="panel" />
         </div>
       </div>
 

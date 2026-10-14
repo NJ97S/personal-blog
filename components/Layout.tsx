@@ -1,3 +1,4 @@
+import { BlogViewsProvider } from '@/components/BlogViewStats'
 import Header from './Header'
 import Footer from './Footer'
 import CategorySidebar from './CategorySidebar'
@@ -11,24 +12,26 @@ export default function Layout({
   rightAside?: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <div
-        className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-8
-                   grid gap-6
-                   grid-cols-1
-                   lg:grid-cols-[260px_minmax(0,1fr)]
-                   xl:grid-cols-[260px_minmax(0,1fr)_260px]"
-      >
-        <aside className="hidden lg:block">
-          <CategorySidebar />
-        </aside>
-        <main className="min-w-0">{children}</main>
-        <aside className="hidden xl:block">
-          {rightAside ?? <SideWidgets />}
-        </aside>
+    <BlogViewsProvider>
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <div
+          className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-8
+                     grid gap-6
+                     grid-cols-1
+                     lg:grid-cols-[260px_minmax(0,1fr)]
+                     xl:grid-cols-[260px_minmax(0,1fr)_260px]"
+        >
+          <aside className="hidden lg:block">
+            <CategorySidebar />
+          </aside>
+          <main className="min-w-0">{children}</main>
+          <aside className="hidden xl:block">
+            {rightAside ?? <SideWidgets />}
+          </aside>
+        </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
+    </BlogViewsProvider>
   )
 }

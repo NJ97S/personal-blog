@@ -1,3 +1,4 @@
+import { getPostViewCounts } from '@/lib/views'
 import Layout from '@/components/Layout'
 import PostCard from '@/components/PostCard'
 import { createClient } from '@/lib/supabase/server'
@@ -45,6 +46,8 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
 
   const categoryById = new Map(walkTree(tree).map((n) => [n.id, n] as const))
 
+  const viewCounts = await getPostViewCounts((posts ?? []).map((post) => post.id))
+
   return (
     <Layout>
       <section className="mb-8">
@@ -66,6 +69,7 @@ export default async function TagPage({ params }: { params: { tag: string } }) {
               slug={post.slug}
               excerpt={post.excerpt}
               tags={post.tags ?? []}
+              viewCount={viewCounts.get(post.id)}
               created_at={post.created_at}
               coverImage={post.cover_image}
               category={cat ? { name: cat.name, path: cat.path } : null}

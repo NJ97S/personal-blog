@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { resolvePostThumbnail } from '@/lib/category-thumbnails'
 import { site } from '@/lib/site'
-import { trackView } from '@/app/actions/views'
+import PostViewCount from '@/components/PostViewCount'
 
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
@@ -117,20 +117,12 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const slug = decodeSlug(params.slug)
 
   // generateMetadata와 동일 호출이지만 React cache()가 한 요청 내에서 dedup합니다.
-  const [{ post, isAdmin }, tree] = await Promise.all([
+  const [{ post }, tree] = await Promise.all([
     loadPostForSlug(slug),
     fetchCategoryTree(),
   ])
 
   if (!post) notFound()
-
-  if (!isAdmin && post.visibility === 'public') {
-    // fire-and-forget: 조회수 트래킹이 페이지 렌더링을 막지 않도록 합니다.
-    // 트래킹 실패는 사용자 경험에 영향이 없으며 내부 로그로만 남깁니다.
-    void trackView(post.id).catch((e) => {
-      console.warn('[trackView] failed', e)
-    })
-  }
 
   const flatNodes = walkTree(tree)
   const categoryNode = post.category_id
@@ -250,11 +242,17 @@ export default async function PostPage({ params }: { params: { slug: string } })
             {post.title}
           </h1>
 
-          <div className="flex items-center justify-between text-sm text-ink-400 mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink-400 mb-4">
             <p>
               <span className="text-ink-900 dark:text-craft-50 font-bold">Soshy</span>
               <span className="mx-1.5">·</span>
               <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
+              {post.visibility === 'public' && (
+                <>
+                  <span className="mx-1.5">·</span>
+                  <PostViewCount postId={post.id} />
+                </>
+              )}
               {post.visibility !== 'public' && (
                 <span className="ml-2 inline-block text-xs border border-craft-200 dark:border-ink-600 px-2 py-0.5 rounded-sm">
                   {post.visibility === 'private' ? '비공개 · 관리자만 표시' : '초안 · 관리자만 표시'}

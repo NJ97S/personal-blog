@@ -1,3 +1,4 @@
+import { getPostViewCounts } from '@/lib/views'
 import Layout from '@/components/Layout'
 import PostCard from '@/components/PostCard'
 import { createClient } from '@/lib/supabase/server'
@@ -93,6 +94,8 @@ export default async function SearchPage({
     )
   }
 
+  const viewCounts = await getPostViewCounts(posts.map((post) => post.id))
+
   return (
     <Layout>
       <section className="mb-8">
@@ -121,6 +124,7 @@ export default async function SearchPage({
               slug={p.slug}
               excerpt={p.excerpt}
               tags={p.tags ?? []}
+              viewCount={viewCounts.get(p.id)}
               created_at={p.created_at}
               coverImage={p.cover_image}
               category={category ?? null}

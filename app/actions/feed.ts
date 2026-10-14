@@ -1,5 +1,6 @@
 'use server'
 
+import { getPostViewCounts } from '@/lib/views'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { FEED_PAGE_SIZE, type FeedItem, type FeedResult } from '@/lib/feed'
@@ -56,10 +57,13 @@ export async function loadMorePosts(opts: {
   const hasMore = rows.length > FEED_PAGE_SIZE
   const visible = hasMore ? rows.slice(0, FEED_PAGE_SIZE) : rows
 
+  const viewCounts = await getPostViewCounts(visible.map((row) => row.id))
+
   const items: FeedItem[] = visible.map((row) => {
     const cat = row.category_id ? categoryById.get(row.category_id) : undefined
     return {
       id: row.id,
+      view_count: viewCounts.get(row.id),
       title: row.title,
       slug: row.slug,
       excerpt: row.excerpt,

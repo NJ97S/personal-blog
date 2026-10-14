@@ -11,6 +11,7 @@ export type PostCardProps = {
   created_at: string
   coverImage?: string | null
   category?: { name: string; path: string[] } | null
+  viewCount?: number
   commentCount?: number
 }
 
@@ -35,6 +36,7 @@ export default function PostCard({
   created_at,
   coverImage,
   category,
+  viewCount,
   commentCount,
 }: PostCardProps) {
   const categoryHref = category
@@ -91,6 +93,7 @@ export default function PostCard({
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-400">
             <span className="font-mono">{formatDate(created_at)}</span>
+            <span className="font-mono">조회수 {viewCount?.toLocaleString('ko-KR') ?? '—'}</span>
             {typeof commentCount === 'number' && commentCount > 0 && (
               <span className="font-mono">💬 {commentCount}</span>
             )}

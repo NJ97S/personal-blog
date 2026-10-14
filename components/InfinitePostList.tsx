@@ -96,6 +96,7 @@ export default function InfinitePostList({
             slug={item.slug}
             excerpt={item.excerpt}
             tags={item.tags ?? []}
+            viewCount={item.view_count}
             created_at={item.created_at}
             coverImage={item.cover_image}
             category={item.category}
