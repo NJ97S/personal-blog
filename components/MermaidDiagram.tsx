@@ -111,6 +111,11 @@ export default function MermaidDiagram({ source, sourceLine, sourceLineEnd }: Pr
               padding: 14,
               diagramPadding: 16,
               wrappingWidth: 260,
+              // 그룹 제목과 첫 노드 사이의 간격도 글자 크기에 맞춰 확보합니다.
+              subGraphTitleMargin: {
+                top: Math.round(fontSize * 0.5),
+                bottom: Math.round(fontSize * 1.5),
+              },
             },
             sequence: {
               useMaxWidth: false,
