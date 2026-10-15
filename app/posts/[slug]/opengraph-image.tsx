@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@/lib/supabase/server'
+import { site } from '@/lib/site'
 
 export const runtime = 'edge'
 export const size = { width: 1200, height: 630 }
@@ -22,7 +23,7 @@ export default async function OgImage({ params }: { params: { slug: string } }) 
     .eq('visibility', 'public')
     .maybeSingle()
 
-  const title = post?.title ?? 'ShyLog'
+  const title = post?.title ?? site.name
   const date = post?.created_at
     ? new Date(post.created_at).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' })
     : ''
@@ -42,7 +43,7 @@ export default async function OgImage({ params }: { params: { slug: string } }) 
           fontFamily: 'serif',
         }}
       >
-        <div style={{ fontSize: 28, color: '#7a6a5a' }}>ShyLog — 개인 기술 블로그</div>
+        <div style={{ fontSize: 28, color: '#7a6a5a' }}>{site.title}</div>
         <div style={{ fontSize: 72, fontWeight: 700, lineHeight: 1.2 }}>{title}</div>
         <div style={{ fontSize: 24, color: '#7a6a5a' }}>{date}</div>
       </div>

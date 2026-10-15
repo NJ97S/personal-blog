@@ -4,7 +4,7 @@ import InfinitePostList from '@/components/InfinitePostList'
 import JsonLd from '@/components/JsonLd'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
-import { site } from '@/lib/site'
+import { authorSchema, site } from '@/lib/site'
 import { FEED_PAGE_SIZE, type FeedItem } from '@/lib/feed'
 
 // 홈 피드는 1분 간격 ISR. 발행/수정 시 revalidatePath('/')가 즉시 무효화하므로
@@ -54,15 +54,13 @@ export default async function Home() {
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': new URL('/#website', site.url).href,
     name: site.name,
     description: site.description,
     url: site.url,
     inLanguage: 'ko',
-    publisher: {
-      '@type': 'Person',
-      name: site.author.name,
-      url: site.author.url,
-    },
+    publisher: authorSchema,
+    creator: authorSchema,
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -77,7 +75,7 @@ export default async function Home() {
     <Layout>
       <JsonLd data={websiteSchema} />
       <section className="mb-8">
-        <h1 className="text-3xl font-serif font-bold mb-2">ShyLog</h1>
+        <h1 className="text-3xl font-serif font-bold mb-2">{site.name}</h1>
         <p className="text-ink-400">종이 위에 남기는 작은 기술 노트들</p>
       </section>
 

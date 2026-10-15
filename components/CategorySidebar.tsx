@@ -2,6 +2,7 @@ import BlogViewStats from '@/components/BlogViewStats'
 import Image from 'next/image'
 import { Folder, Mail } from 'lucide-react'
 import { fetchCategoryTree } from '@/lib/categories'
+import { site } from '@/lib/site'
 import CategoryTree from './CategoryTree'
 
 export default async function CategorySidebar() {
@@ -13,7 +14,7 @@ export default async function CategorySidebar() {
         <div className="flex items-start gap-3">
           <Image
             src="/profile.jpeg"
-            alt="프로필"
+            alt={`${site.author.name} 프로필`}
             width={48}
             height={48}
             className="h-12 w-12 shrink-0 rounded-full object-cover"
@@ -21,10 +22,10 @@ export default async function CategorySidebar() {
           />
           <div className="flex min-w-0 flex-col gap-1.5 text-sm">
             <a
-              href="https://github.com/NJ97S"
+              href={site.author.url}
               target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub 프로필 열기"
+              rel="me noopener noreferrer"
+              aria-label={`${site.author.name} GitHub 프로필 열기`}
               className="flex items-center gap-2 text-ink-600 hover:text-ink-900 dark:text-craft-100 dark:hover:text-craft-50"
             >
               <svg

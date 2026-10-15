@@ -13,7 +13,7 @@ import MarkdownView from '@/components/MarkdownView'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { resolvePostThumbnail } from '@/lib/category-thumbnails'
-import { site } from '@/lib/site'
+import { authorSchema, site } from '@/lib/site'
 import PostViewCount from '@/components/PostViewCount'
 
 export const dynamic = 'force-dynamic'
@@ -168,16 +168,9 @@ export default async function PostPage({ params }: { params: { slug: string } })
     description: post.excerpt ?? site.description,
     datePublished: post.created_at,
     dateModified: post.updated_at ?? post.created_at,
-    author: {
-      '@type': 'Person',
-      name: site.author.name,
-      url: site.author.url,
-    },
-    publisher: {
-      '@type': 'Person',
-      name: site.author.name,
-      url: site.author.url,
-    },
+    author: authorSchema,
+    publisher: authorSchema,
+    isPartOf: { '@type': 'WebSite', '@id': new URL('/#website', site.url).href },
     mainEntityOfPage: { '@type': 'WebPage', '@id': postUrl },
     ...(thumbnail
       ? { image: [new URL(thumbnail, site.url).toString()] }
@@ -244,7 +237,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink-400 mb-4">
             <p>
-              <span className="text-ink-900 dark:text-craft-50 font-bold">Soshy</span>
+              <span className="text-ink-900 dark:text-craft-50 font-bold">{site.author.name}</span>
               <span className="mx-1.5">·</span>
               <time dateTime={post.created_at}>{formatDate(post.created_at)}</time>
               {post.visibility === 'public' && (
