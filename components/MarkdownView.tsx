@@ -1,4 +1,4 @@
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import remarkCjkFriendly from 'remark-cjk-friendly/parseOnly'
@@ -7,6 +7,7 @@ import rehypeSlug from 'rehype-slug'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import type { PluggableList } from 'unified'
+import MermaidDiagram from '@/components/MermaidDiagram'
 
 // highlight.js 전 언어를 번들에 포함하면 ~180KB(gzip)이 클라이언트로 전달됩니다.
 // 블로그에서 실제 사용하는 언어만 등록해 ~150KB 절감합니다.
@@ -169,6 +170,37 @@ const rehypePlugins: PluggableList = [
 ]
 const rehypePluginsAnnotated: PluggableList = [...rehypePlugins, rehypeSourceLine]
 
+const markdownComponents: Components = {
+  pre({ node, children, ...props }) {
+    const code = node?.children[0]
+    if (
+      code?.type === 'element' &&
+      code.tagName === 'code' &&
+      Array.isArray(code.properties.className) &&
+      code.properties.className.includes('language-mermaid')
+    ) {
+      const source = code.children
+        .map((child) => child.type === 'text' ? child.value : '')
+        .join('')
+      return (
+        <MermaidDiagram
+          source={source}
+          sourceLine={node?.properties.dataLine != null ? node.position?.start.line : undefined}
+          sourceLineEnd={node?.properties.dataLineEnd != null ? node.position?.end.line : undefined}
+        />
+      )
+    }
+    return <pre {...props}>{children}</pre>
+  },
+  table({ node, ...props }) {
+    return (
+      <div className="markdown-table-wrapper">
+        <table {...props} />
+      </div>
+    )
+  },
+}
+
 type Props = {
   content: string
   compact?: boolean
@@ -196,15 +228,7 @@ export default function MarkdownView({
       <ReactMarkdown
         remarkPlugins={remarkPlugins}
         rehypePlugins={annotateLines ? rehypePluginsAnnotated : rehypePlugins}
-        components={{
-          table({ node, ...props }) {
-            return (
-              <div className="markdown-table-wrapper">
-                <table {...props} />
-              </div>
-            )
-          },
-        }}
+        components={markdownComponents}
       >
         {content}
       </ReactMarkdown>

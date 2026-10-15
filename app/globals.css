@@ -142,6 +142,73 @@
   overflow-wrap: normal;
 }
 
+/* 본문 글자 크기를 유지하고, 넓은 도식은 축소하는 대신 내부에서 스크롤합니다. */
+.craft-prose .markdown-mermaid {
+  margin-block: var(--craft-block-gap);
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid rgb(216 186 132 / 35%);
+  border-radius: 0.75rem;
+  padding: clamp(0.75rem, 2vw, 1.25rem);
+  background: #fcf7ee;
+}
+.dark .craft-prose .markdown-mermaid {
+  border-color: rgb(126 105 82 / 45%);
+  background: #241c16;
+}
+.markdown-mermaid-viewport {
+  max-width: 100%;
+  min-width: 0;
+  overflow: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #d8ba84 transparent;
+}
+.dark .markdown-mermaid-viewport {
+  scrollbar-color: #7e6952 transparent;
+}
+.markdown-mermaid-viewport:focus-visible {
+  outline: 2px solid #c39d5c;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+.craft-prose .markdown-mermaid-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #7a6a5a;
+}
+.dark .craft-prose .markdown-mermaid-hint {
+  color: #d8ba84;
+}
+.markdown-mermaid-diagram {
+  width: max-content;
+  min-width: 100%;
+}
+.markdown-mermaid-diagram svg {
+  display: block;
+  height: auto;
+  margin-inline: auto;
+  max-width: none;
+}
+.markdown-mermaid-diagram .node rect,
+.markdown-mermaid-diagram .cluster rect,
+.markdown-mermaid-diagram rect.actor,
+.markdown-mermaid-diagram rect.note {
+  rx: 8px;
+  ry: 8px;
+}
+.markdown-mermaid-diagram .flowchart-link,
+.markdown-mermaid-diagram .actor-line,
+.markdown-mermaid-diagram .messageLine0,
+.markdown-mermaid-diagram .messageLine1 {
+  stroke-width: 1.1px !important;
+}
+.craft-prose .markdown-mermaid-diagram p {
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* Markdown editor live preview: match left editor's compact size */
 .craft-prose-compact {
   font-size: 14px !important;
