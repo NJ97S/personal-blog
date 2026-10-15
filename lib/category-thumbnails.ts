@@ -4,6 +4,18 @@ const CATEGORY_DEFAULT_THUMBNAILS_BY_SLUG: Readonly<Record<string, string>> = {
   'ai-trends': '/images/category-thumbnails/ai-trends.png',
   diary: '/images/category-thumbnails/diary.png',
   javascript: '/images/category-thumbnails/javascript.png',
+  language: '/images/category-thumbnails/language.png',
+  typescript: '/images/category-thumbnails/typescript.png',
+  web: '/images/category-thumbnails/web.png',
+  frontend: '/images/category-thumbnails/frontend.png',
+  backend: '/images/category-thumbnails/backend.png',
+  framework: '/images/category-thumbnails/framework.png',
+  react: '/images/category-thumbnails/react.png',
+  nextjs: '/images/category-thumbnails/nextjs.png',
+  algorithm: '/images/category-thumbnails/algorithm.png',
+  project: '/images/category-thumbnails/project.png',
+  shylog: '/images/category-thumbnails/shylog.png',
+  'ai-briefing': '/images/category-thumbnails/ai-briefing.png',
 }
 
 /**
