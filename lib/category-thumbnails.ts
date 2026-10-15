@@ -3,6 +3,7 @@ const CATEGORY_DEFAULT_THUMBNAILS_BY_SLUG: Readonly<Record<string, string>> = {
   'web-trends': '/images/category-thumbnails/web-trends.png',
   'ai-trends': '/images/category-thumbnails/ai-trends.png',
   diary: '/images/category-thumbnails/diary.png',
+  javascript: '/images/category-thumbnails/javascript.png',
 }
 
 /**
