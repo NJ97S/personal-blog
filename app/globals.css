@@ -108,6 +108,14 @@
   margin-top: 2em;
   margin-bottom: 0.75em;
 }
+/* Keep section headings distinct from each other and inline bold text.
+   Relative sizes preserve the same hierarchy in the compact editor preview. */
+.craft-prose h2 { font-size: 1.5em; }
+.craft-prose h3 { font-size: 1.25em; }
+.craft-prose h4 {
+  font-size: 1.125em;
+  font-weight: 700;
+}
 .craft-prose :is(h1, h2, h3, h4, h5, h6) + * {
   margin-top: 0;
 }
@@ -215,9 +223,6 @@
   line-height: 1.6 !important;
 }
 .craft-prose-compact h1 { font-size: 1.6em !important; }
-.craft-prose-compact h2 { font-size: 1.4em !important; }
-.craft-prose-compact h3 { font-size: 1.2em !important; }
-.craft-prose-compact h4,
 .craft-prose-compact h5,
 .craft-prose-compact h6 { font-size: 1em !important; }
 .craft-prose-compact pre,
