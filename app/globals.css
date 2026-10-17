@@ -23,6 +23,9 @@
   }
   body {
     @apply font-serif antialiased;
+    /* Kkukkukk only has a regular face; synthetic bold corrupts glyphs such as 통.
+       Keep synthetic italics available and use real bold faces where provided. */
+    font-synthesis: style;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif;
