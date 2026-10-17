@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createPortal } from 'react-dom'
 import { List, X } from 'lucide-react'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -107,15 +108,16 @@ export default function MobilePostToc({
               <ul className="border-l border-craft-200 dark:border-ink-600">
                 {headings.map((heading) => (
                   <li key={heading.id}>
-                    <a
+                    <Link
                       href={`#${encodeURIComponent(heading.id)}`}
+                      replace
                       onClick={() => setOpen(false)}
                       aria-current={heading.id === activeId ? 'location' : undefined}
                       style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
                       className={`-ml-px flex min-h-11 items-center border-l py-3 pr-3 text-sm break-words hover:bg-craft-100 dark:hover:bg-ink-800 ${heading.id === activeId ? 'border-ink-900 bg-craft-100 font-bold text-ink-900 dark:border-craft-50 dark:bg-ink-800 dark:text-craft-50' : 'border-transparent text-ink-400 dark:text-craft-200'}`}
                     >
                       {heading.text}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

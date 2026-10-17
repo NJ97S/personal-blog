@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import MobilePostToc from '@/components/MobilePostToc'
 
@@ -92,8 +93,9 @@ export default function PostToc() {
             const active = h.id === activeId
             return (
               <li key={h.id}>
-                <a
+                <Link
                   href={`#${h.id}`}
+                  replace
                   style={{ paddingLeft: 12 + (h.level - 1) * 12 }}
                   className={`block py-1 pr-2 -ml-px border-l hover:text-ink-900 dark:hover:text-craft-50 ${
                     active
@@ -102,7 +104,7 @@ export default function PostToc() {
                   }`}
                 >
                   {h.text}
-                </a>
+                </Link>
               </li>
             )
           })}
