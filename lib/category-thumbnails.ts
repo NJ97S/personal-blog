@@ -9,6 +9,7 @@ const CATEGORY_DEFAULT_THUMBNAILS_BY_SLUG: Readonly<Record<string, string>> = {
   web: '/images/category-thumbnails/web.png',
   frontend: '/images/category-thumbnails/frontend.png',
   backend: '/images/category-thumbnails/backend.png',
+  network: '/images/category-thumbnails/network.png',
   framework: '/images/category-thumbnails/framework.png',
   react: '/images/category-thumbnails/react.png',
   nextjs: '/images/category-thumbnails/nextjs.png',
