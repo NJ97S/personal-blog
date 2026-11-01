@@ -39,6 +39,23 @@ export default async function CategorySidebar() {
               <span className="break-all hover:underline underline-offset-4">NJ97S</span>
             </a>
             <a
+              href="https://www.linkedin.com/in/namju-so-03624a343/"
+              target="_blank"
+              rel="me noopener noreferrer"
+              aria-label={`${site.author.name} LinkedIn 프로필 열기`}
+              className="flex items-center gap-2 text-ink-600 hover:text-ink-900 dark:text-craft-100 dark:hover:text-craft-50"
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-4 w-4 shrink-0"
+              >
+                <path d="M20.45 2H3.55C2.69 2 2 2.68 2 3.52v16.96c0 .84.69 1.52 1.55 1.52h16.9c.86 0 1.55-.68 1.55-1.52V3.52c0-.84-.69-1.52-1.55-1.52ZM7.93 18.75H4.98V9.2h2.95v9.55ZM6.45 7.9a1.71 1.71 0 1 1 0-3.42 1.71 1.71 0 0 1 0 3.42Zm12.3 10.85H15.8V14.1c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46v4.73H9.51V9.2h2.83v1.31h.04c.39-.74 1.36-1.52 2.79-1.52 2.98 0 3.58 1.96 3.58 4.51v5.25Z" />
+              </svg>
+              <span className="hover:underline underline-offset-4">LinkedIn</span>
+            </a>
+            <a
               href="mailto:skawn1228@gmail.com"
               aria-label="이메일 보내기"
               className="flex items-center gap-2 text-ink-600 hover:text-ink-900 dark:text-craft-100 dark:hover:text-craft-50"
