@@ -4,6 +4,7 @@ import { getPostViewCounts } from '@/lib/views'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoryTree, walkTree } from '@/lib/categories'
 import { FEED_PAGE_SIZE, type FeedItem, type FeedResult } from '@/lib/feed'
+import { getBriefingCategories } from '@/lib/briefings'
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/
 
@@ -19,6 +20,7 @@ const UUID_RE =
 export async function loadMorePosts(opts: {
   cursor: string
   categoryIds?: string[] | null
+  excludeBriefings?: boolean
 }): Promise<FeedResult> {
   if (!opts || typeof opts.cursor !== 'string' || !isValidCursor(opts.cursor)) {
     return { items: [], nextCursor: null }
@@ -29,6 +31,7 @@ export async function loadMorePosts(opts: {
     : null
 
   const supabase = createClient()
+  const tree = await fetchCategoryTree()
 
   let query = supabase
     .from('posts')
@@ -44,10 +47,14 @@ export async function loadMorePosts(opts: {
     query = query.in('category_id', categoryIds)
   }
 
-  const [{ data: rows, error }, tree] = await Promise.all([
-    query,
-    fetchCategoryTree(),
-  ])
+  if (opts.excludeBriefings === true) {
+    const { excludedIds } = getBriefingCategories(tree)
+    if (excludedIds.length > 0) {
+      query = query.or(`category_id.is.null,category_id.not.in.(${excludedIds.join(',')})`)
+    }
+  }
+
+  const { data: rows, error } = await query
 
   if (error || !rows) {
     return { items: [], nextCursor: null }

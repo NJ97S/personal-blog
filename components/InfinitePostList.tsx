@@ -9,12 +9,14 @@ type Props = {
   initialItems: FeedItem[]
   initialCursor: string | null
   categoryIds?: string[] | null
+  excludeBriefings?: boolean
 }
 
 export default function InfinitePostList({
   initialItems,
   initialCursor,
   categoryIds,
+  excludeBriefings = false,
 }: Props) {
   const [items, setItems] = useState<FeedItem[]>(initialItems)
   const [cursor, setCursor] = useState<string | null>(initialCursor)
@@ -50,7 +52,7 @@ export default function InfinitePostList({
     setLoading(true)
     setError(null)
     try {
-      const res = await loadMorePosts({ cursor, categoryIds })
+      const res = await loadMorePosts({ cursor, categoryIds, excludeBriefings })
       const fresh = res.items.filter((item) => {
         if (seenIdsRef.current.has(item.id)) return false
         seenIdsRef.current.add(item.id)
@@ -66,7 +68,7 @@ export default function InfinitePostList({
       setLoading(false)
       loadingRef.current = false
     }
-  }, [cursor, categoryIds])
+  }, [cursor, categoryIds, excludeBriefings])
 
   useEffect(() => {
     if (!cursor) return

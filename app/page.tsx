@@ -2,8 +2,10 @@ import { getPostViewCounts } from '@/lib/views'
 import Layout from '@/components/Layout'
 import InfinitePostList from '@/components/InfinitePostList'
 import JsonLd from '@/components/JsonLd'
+import DailyBriefings from '@/components/DailyBriefings'
 import { createClient } from '@/lib/supabase/server'
-import { fetchCategoryTree, walkTree } from '@/lib/categories'
+import { collectDescendantIds, fetchCategoryTree, walkTree } from '@/lib/categories'
+import { BRIEFING_PREVIEW_SIZE, getBriefingCategories } from '@/lib/briefings'
 import { authorSchema, site } from '@/lib/site'
 import { FEED_PAGE_SIZE, type FeedItem } from '@/lib/feed'
 
@@ -13,8 +15,10 @@ export const revalidate = 60
 
 export default async function Home() {
   const supabase = createClient()
+  const tree = await fetchCategoryTree()
+  const briefings = getBriefingCategories(tree)
 
-  const query = supabase
+  let query = supabase
     .from('posts')
     .select(
       'id, title, slug, excerpt, tags, created_at, cover_image, category_id',
@@ -23,7 +27,24 @@ export default async function Home() {
     .order('created_at', { ascending: false })
     .limit(FEED_PAGE_SIZE + 1)
 
-  const [{ data: rows, error }, tree] = await Promise.all([query, fetchCategoryTree()])
+  if (briefings.excludedIds.length > 0) {
+    query = query.or(`category_id.is.null,category_id.not.in.(${briefings.excludedIds.join(',')})`)
+  }
+
+  const briefingColumns = [
+    { label: 'Web', category: briefings.web },
+    { label: 'AI', category: briefings.ai },
+  ]
+  const [{ data: rows, error }, ...briefingResults] = await Promise.all([
+    query,
+    ...briefingColumns.map(({ category }) => category
+      ? supabase.from('posts').select('id, title, slug, created_at')
+        .eq('visibility', 'public')
+        .in('category_id', collectDescendantIds(category))
+        .order('created_at', { ascending: false })
+        .limit(BRIEFING_PREVIEW_SIZE)
+      : Promise.resolve({ data: [], error: null })),
+  ])
 
   const posts = rows ?? []
   const hasMore = posts.length > FEED_PAGE_SIZE
@@ -74,27 +95,34 @@ export default async function Home() {
   return (
     <Layout>
       <JsonLd data={websiteSchema} />
-      <section className="mb-8">
-        <h1 className="text-3xl font-serif font-bold mb-2">{site.name}</h1>
-        <p className="text-ink-400">종이 위에 남기는 작은 기술 노트들</p>
+      {(briefings.web || briefings.ai) && (
+        <DailyBriefings columns={briefingColumns.map((column, index) => ({
+          ...column,
+          posts: briefingResults[index].data ?? [],
+          error: Boolean(briefingResults[index].error),
+        }))} />
+      )}
+
+      <section aria-labelledby="recent-posts-heading">
+        <h2 id="recent-posts-heading" className="mb-4 text-xl font-serif font-bold">최근 글</h2>
+        {error && (
+          <p className="craft-card p-4 text-sm text-ink-400">
+            글을 불러오지 못했습니다. Supabase 환경변수를 확인해주세요.
+          </p>
+        )}
+
+        {!error && initialItems.length === 0 && (
+          <p className="craft-card p-4 text-sm text-ink-400">아직 발행된 일반 글이 없습니다.</p>
+        )}
+
+        {initialItems.length > 0 && (
+          <InfinitePostList
+            initialItems={initialItems}
+            initialCursor={initialCursor}
+            excludeBriefings
+          />
+        )}
       </section>
-
-      {error && (
-        <p className="craft-card p-4 text-sm text-ink-400">
-          글을 불러오지 못했습니다. Supabase 환경변수를 확인해주세요.
-        </p>
-      )}
-
-      {!error && initialItems.length === 0 && (
-        <p className="craft-card p-4 text-sm text-ink-400">아직 발행된 글이 없습니다.</p>
-      )}
-
-      {initialItems.length > 0 && (
-        <InfinitePostList
-          initialItems={initialItems}
-          initialCursor={initialCursor}
-        />
-      )}
     </Layout>
   )
 }
