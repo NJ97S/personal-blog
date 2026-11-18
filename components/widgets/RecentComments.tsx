@@ -6,37 +6,15 @@ function truncate(s: string, n: number) {
   return s.length > n ? s.slice(0, n) + '…' : s
 }
 
-type RelatedPost = { slug: string; title: string; visibility: string }
-type CommentRow = {
-  id: string
-  author_name: string
-  content: string
-  created_at: string
-  post: RelatedPost | RelatedPost[] | null
-}
-
-function firstPost(p: CommentRow['post']): RelatedPost | null {
-  if (!p) return null
-  return Array.isArray(p) ? (p[0] ?? null) : p
-}
-
 export default async function RecentComments() {
   const supabase = createClient()
-  const { data } = await supabase
-    .from('comments')
-    .select(
-      'id, author_name, content, created_at, post:posts!inner(slug, title, visibility)',
-    )
-    .is('deleted_at', null)
-    .eq('post.visibility', 'public')
+  const { data, error } = await supabase
+    .from('public_comments')
+    .select('id, author_name, content, post_slug, post_title')
     .order('created_at', { ascending: false })
-    .limit(10)
-
-  const rows: CommentRow[] = (data ?? []) as unknown as CommentRow[]
-  const visible = rows
-    .map((c) => ({ ...c, post: firstPost(c.post) }))
-    .filter((c): c is CommentRow & { post: RelatedPost } => c.post?.visibility === 'public')
-    .slice(0, 5)
+    .order('id', { ascending: false })
+    .limit(5)
+  const comments = data ?? []
 
   return (
     <section className="craft-card p-4">
@@ -44,11 +22,13 @@ export default async function RecentComments() {
         <MessageSquare aria-hidden className="h-4 w-4 text-ink-500 dark:text-craft-200" />
         <span>최근 댓글</span>
       </h3>
-      {visible.length === 0 ? (
+      {error ? (
+        <p className="text-xs text-ink-400">최근 댓글을 불러오지 못했습니다.</p>
+      ) : comments.length === 0 ? (
         <p className="text-xs text-ink-400">아직 댓글이 없습니다.</p>
       ) : (
         <ul className="space-y-3 text-sm">
-          {visible.map((c) => (
+          {comments.map((c) => (
             <li key={c.id}>
               <p className="text-ink-600 dark:text-craft-100 line-clamp-2">
                 {truncate(c.content, 80)}
@@ -57,10 +37,10 @@ export default async function RecentComments() {
                 <span className="font-mono">{c.author_name}</span>
                 {' · '}
                 <Link
-                  href={`/posts/${c.post.slug}`}
+                  href={`/posts/${encodeURIComponent(c.post_slug)}`}
                   className="hover:text-ink-900 dark:hover:text-craft-50"
                 >
-                  {truncate(c.post.title, 24)}
+                  {truncate(c.post_title, 24)}
                 </Link>
               </p>
             </li>

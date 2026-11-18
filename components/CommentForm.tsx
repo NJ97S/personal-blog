@@ -80,7 +80,6 @@ export default function CommentForm({
             required
             minLength={4}
             maxLength={20}
-            autoComplete="new-password"
           />
         </div>
       </div>
@@ -99,7 +98,7 @@ export default function CommentForm({
         />
       </div>
 
-      {state.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+      {state.error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
 
       <div className="flex justify-end">
         <SubmitButton ready={hydrated} />

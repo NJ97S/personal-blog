@@ -96,12 +96,12 @@ export default function CommentItem({
       setError(res.error ?? '수정에 실패했습니다.')
       return
     }
-    onUpdated?.(comment.id, trimmed)
+    onUpdated?.(comment.id, res.content)
     toast.success('댓글이 수정되었습니다.')
     setMode('view')
     setPassword('')
     setError(null)
-    setEditContent(trimmed)
+    setEditContent(res.content)
   }
 
   const onConfirmDelete = async () => {
@@ -175,9 +175,9 @@ export default function CommentItem({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="작성 시 입력한 비밀번호"
+              aria-label="댓글 수정 비밀번호"
               minLength={4}
               maxLength={20}
-              autoComplete="current-password"
             />
           )}
           {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
@@ -215,9 +215,9 @@ export default function CommentItem({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="작성 시 입력한 비밀번호"
+              aria-label="댓글 삭제 비밀번호"
               minLength={4}
               maxLength={20}
-              autoComplete="current-password"
             />
           )}
           {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
